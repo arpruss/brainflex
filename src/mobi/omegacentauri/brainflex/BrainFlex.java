@@ -138,7 +138,7 @@ public class BrainFlex extends JFrame {
 	void readData() throws IOException {
 		String comPort;
 
-		comPort = JOptionPane.showInputDialog(null, "Please enter Brainlink's serial port identifier (windows: COMXXX, mac/linux: /dev/XXX");    
+		comPort = JOptionPane.showInputDialog(null, "Brainlink serial port?");
 
 		byte[] buffer = new byte[0];
 

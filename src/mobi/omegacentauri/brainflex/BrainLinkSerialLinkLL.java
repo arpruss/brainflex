@@ -13,6 +13,7 @@ import gnu.io.SerialPort;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Enumeration;
 
 public class BrainLinkSerialLinkLL extends DataLink {
 	private static final byte[] BAUD9600 = { '*', 'C', 829>>8, 829&0xFF, -2 };
@@ -26,15 +27,30 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	public BrainLinkSerialLinkLL(String port) {
 		CommPortIdentifier id;
 		try {
+			id = null;
+			CommPortIdentifier ignoreCaseID = null;
 			System.out.println("Searching for "+port);
-			id = CommPortIdentifier.getPortIdentifier(port.toUpperCase());
-			System.out.println("port "+id);
+			Enumeration<CommPortIdentifier> ids = CommPortIdentifier.getPortIdentifiers();
+			while(ids.hasMoreElements()) {
+				id = ids.nextElement();
+				if (id.getName().equals(port))
+					break;
+				if (id.getName().equalsIgnoreCase(port))
+					ignoreCaseID = id;
+			}
+			if (id == null)
+				id = ignoreCaseID;
+			if (id == null)
+				throw new IOException("Cannot find serial port");
+
 			p = (SerialPort) id.open("BrainLinkSerialLinkLL", 5000);
+			p.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 			iStream = p.getInputStream();
 			oStream = p.getOutputStream();
 			oStream.write(new byte[] { '*' });
 		} catch (Exception e) {
 			System.err.println("Ooops "+e);
+			System.exit(1);
 		}
 	}
 
@@ -76,11 +92,6 @@ public class BrainLinkSerialLinkLL extends DataLink {
 
 		try {
 			oStream.write(new byte[] { '*', 'r' } );
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-			}
-			// TODO: implement timeouts
 			if (!readUntil(iStream,(byte)'*',50) || !readUntil(iStream,(byte)'r',50))
 				return buff;
 			if (!readBytes(iStream,oneByte,50)) 
@@ -148,6 +159,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	@Override
 	public void transmit(byte... data) {
 		try {
+			oStream.write('*');
 			oStream.write('t');
 			oStream.write(new byte[] { (byte)data.length });
 			oStream.write(data);

@@ -1,1 +1,1 @@
-java mobi.omegacentauri.brainflex.BrainFlex
+java -cp bin mobi.omegacentauri.brainflex.BrainFlex
