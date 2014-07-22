@@ -18,16 +18,19 @@ import java.io.OutputStream;
 import java.util.Enumeration;
 
 public class BrainLinkSerialLinkLL extends DataLink {
+  // Use information from: http://www.brainlinksystem.com/brainlink-hardware-description
+  // and calculator from: http://www.avrcalc.elektronik-projekt.de/xmega/baud_rate_calculator
+  // with 32MHz clock rate.
 	private static final byte[] BAUD9600 = { '*', 'C', 829>>8, 829&0xFF, -2 };
 	private static final byte[] BAUD57600 = { '*', 'C', 0, (byte)135, -2 };
 	private static final byte[] BAUD1200 = { '*', 'C', (byte)(6663>>8), (byte)(6663&0xFF), -2 };
 	private static final byte[] BAUD19200 = { '*', 'C', (byte)(825>>8), (byte)(825&0xFF), -3 };
 	private static final byte[] BAUD115200 = { '*', 'C', 0, (byte)(131&0xFF), -3 };
-	private static final byte[] BAUD230000 = { '*', 'C', (byte)(983>>8), (byte)(983&0xFF), -1 };
 	private static final byte[] BAUD38400 = { '*', 'C', 0, (byte)(204&0xFF), -2 };
-	SerialPort p;
-	InputStream iStream;
-	OutputStream oStream;
+
+	private SerialPort p;
+	private InputStream iStream;
+	private OutputStream oStream;
 	private int baud;
 
 	public BrainLinkSerialLinkLL(String port) {
@@ -76,8 +79,6 @@ public class BrainLinkSerialLinkLL extends DataLink {
 				oStream.write(BAUD115200);
 			else if (baud == 38400)
 				oStream.write(BAUD38400);
-			else if (baud == 230000)
-				oStream.write(BAUD230000);
 			else {
 				System.err.println("Unrecognized baud "+baud);
 			}
