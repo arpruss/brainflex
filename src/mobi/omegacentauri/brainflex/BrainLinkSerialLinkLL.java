@@ -5,6 +5,8 @@
 *
 */
 
+// serial proxied via BrainLink
+
 package mobi.omegacentauri.brainflex;
 
 import gnu.io.CommPortIdentifier;
@@ -18,7 +20,11 @@ import java.util.Enumeration;
 public class BrainLinkSerialLinkLL extends DataLink {
 	private static final byte[] BAUD9600 = { '*', 'C', 829>>8, 829&0xFF, -2 };
 	private static final byte[] BAUD57600 = { '*', 'C', 0, (byte)135, -2 };
-	private static final byte[] BAUD1200 = { '*', 'C', (byte)(6632>>8), (byte)(6632&0xFF), -2 };
+	private static final byte[] BAUD1200 = { '*', 'C', (byte)(6663>>8), (byte)(6663&0xFF), -2 };
+	private static final byte[] BAUD19200 = { '*', 'C', (byte)(825>>8), (byte)(825&0xFF), -3 };
+	private static final byte[] BAUD115200 = { '*', 'C', 0, (byte)(131&0xFF), -3 };
+	private static final byte[] BAUD230000 = { '*', 'C', (byte)(983>>8), (byte)(983&0xFF), -1 };
+	private static final byte[] BAUD38400 = { '*', 'C', 0, (byte)(204&0xFF), -2 };
 	SerialPort p;
 	InputStream iStream;
 	OutputStream oStream;
@@ -62,8 +68,16 @@ public class BrainLinkSerialLinkLL extends DataLink {
 				oStream.write(BAUD9600);
 			else if (baud == 57600)
 				oStream.write(BAUD57600);
-			else if (baud == 1200) 
+			else if (baud == 1200)
 				oStream.write(BAUD1200);
+			else if (baud == 19200)
+				oStream.write(BAUD19200);
+			else if (baud == 115200)
+				oStream.write(BAUD115200);
+			else if (baud == 38400)
+				oStream.write(BAUD38400);
+			else if (baud == 230000)
+				oStream.write(BAUD230000);
 			else {
 				System.err.println("Unrecognized baud "+baud);
 			}
