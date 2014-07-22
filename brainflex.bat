@@ -1,1 +1,1 @@
-java -cp bin mobi.omegacentauri.brainflex.BrainFlex
+java -cp bin;libs/RXTXcomm.jar;rxtx mobi.omegacentauri.brainflex.BrainFlex
