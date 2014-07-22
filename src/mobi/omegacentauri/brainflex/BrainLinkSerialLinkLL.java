@@ -1,15 +1,18 @@
-package examples;
+/**
+*
+* Copyright (c) 2013 Alexander Pruss
+* Distributed under the GNU GPL v2 or later. For full terms see the file COPYING.
+*
+*/
+
+package mobi.omegacentauri.brainflex;
+
+import gnu.io.CommPortIdentifier;
+import gnu.io.SerialPort;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-
-import edu.cmu.ri.createlab.brainlink.BrainLink;
-import edu.cmu.ri.createlab.serial.config.SerialIOConfiguration;
-import gnu.io.CommPortIdentifier;
-import gnu.io.NoSuchPortException;
-import gnu.io.SerialPort;
 
 public class BrainLinkSerialLinkLL extends DataLink {
 	private static final byte[] BAUD9600 = { '*', 'C', 829>>8, 829&0xFF, -2 };
