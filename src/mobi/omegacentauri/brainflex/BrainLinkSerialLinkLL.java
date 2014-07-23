@@ -36,27 +36,39 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	public BrainLinkSerialLinkLL(String port) {
 		CommPortIdentifier id;
 		try {
-			id = null;
-			CommPortIdentifier ignoreCaseID = null;
-			System.out.println("Searching for "+port);
-			Enumeration<CommPortIdentifier> ids = CommPortIdentifier.getPortIdentifiers();
-			while(ids.hasMoreElements()) {
-				id = ids.nextElement();
-				if (id.getName().equals(port))
-					break;
-				if (id.getName().equalsIgnoreCase(port))
-					ignoreCaseID = id;
-			}
+//			id = null;
+//			CommPortIdentifier ignoreCaseID = null;
+//			System.out.println("Searching for "+port);
+//			Enumeration<CommPortIdentifier> ids = CommPortIdentifier.getPortIdentifiers();
+//			while(ids.hasMoreElements()) {
+//				CommPortIdentifier curID = ids.nextElement();
+//				System.out.println("Have "+curID.getName());
+//				if (curID.getName().equals(port)) {
+//					id = curID;
+//					break;
+//				}
+//				if (curID.getName().equalsIgnoreCase(port)) {
+//					ignoreCaseID = curID;
+//				}
+//			}
+//			if (id == null)
+//				id = ignoreCaseID;
+			String searchPort;
+			if (System.getProperty("os.name").toLowerCase().contains("windows"))
+				searchPort = port.toUpperCase();
+			else
+				searchPort = port;
+			id = CommPortIdentifier.getPortIdentifier(searchPort);
 			if (id == null)
-				id = ignoreCaseID;
-			if (id == null)
-				throw new IOException("Cannot find serial port");
+				throw new IOException("Cannot find serial port "+searchPort);
 
+			System.out.println("Opening "+id.getName());
 			p = (SerialPort) id.open("BrainLinkSerialLinkLL", 5000);
-			p.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+			System.out.println("Opened port "+p.getName());
+		//	p.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 			iStream = p.getInputStream();
 			oStream = p.getOutputStream();
-			oStream.write(new byte[] { '*' });
+			oStream.write(new byte[] { '*', 'O', 0, (byte)32, 0 });
 		} catch (Exception e) {
 			System.err.println("Ooops "+e);
 			System.exit(1);
@@ -106,7 +118,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 		byte[] oneByte = new byte[1];
 
 		try {
-			oStream.write(new byte[] { '*', 'r' } );
+			oStream.write(new byte[] { '*','r' } );
 			if (!readUntil(iStream,(byte)'*',50) || !readUntil(iStream,(byte)'r',50))
 				return buff;
 			if (!readBytes(iStream,oneByte,50)) 
@@ -119,7 +131,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 			buff = new byte[length]; 
 			if(!readBytes(iStream,buff,5*length))
 				return buff;
-			//BrainFlex.dumpData(buff);
+			BrainFlex.dumpData(buff);
 		} catch (IOException e) {
 		}
 

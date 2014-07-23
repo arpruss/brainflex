@@ -149,13 +149,13 @@ public class BrainFlex extends JFrame {
 		System.out.println("CONNECTING");
 		dataLink = new BrainLinkSerialLinkLL(comPort); //brainLink);
 		dataLink.start(9600);
-		dataLink.transmit(0x03); // 0x00 = 9600 baud, 0x0F = 57600 baud,
+		//dataLink.transmit(0x01); // 0x00 = 9600 baud, 0x0F = 57600 baud,
 		// 0x00 : 9600 : normal
-		// 0x01 : ??
+		// 0x01 : 1200
 		// 0x02 : 57600 : RAW
 		// 0x03 : 57600 : lots of 0x82 signals, 4 bytes
 		//		sleep(100);
-		dataLink.start(57600);
+		//dataLink.start(1200);
 		//		sleep(100);
 		System.out.println("CONNECTED");
 
