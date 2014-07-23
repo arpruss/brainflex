@@ -1,9 +1,9 @@
 /**
-*
-* Copyright (c) 2013 Alexander Pruss
-* Distributed under the GNU GPL v2 or later. For full terms see the file COPYING.
-*
-*/
+ *
+ * Copyright (c) 2013 Alexander Pruss
+ * Distributed under the GNU GPL v2 or later. For full terms see the file COPYING.
+ *
+ */
 
 package mobi.omegacentauri.brainflex;
 
@@ -42,9 +42,16 @@ public class BrainFlex extends JFrame {
 	public long t0;
 	private int lastSignal;
 	private Data curData;
+	private long signalCount;
+	private boolean rawMode;
+	private long lastPaintTime;
+	public static final int MODE_NORMAL = 0;
+	public static final int MODE_RAW = 0x02;
+        private int mode = MODE_NORMAL;
 
 	public BrainFlex() {
 		t0 = System.currentTimeMillis();
+		signalCount = 0;
 		data = new ArrayList<Data>();
 		lastSignal = 100;
 
@@ -54,74 +61,108 @@ public class BrainFlex extends JFrame {
 	}
 
 	private class MyPanel extends JPanel {
-	@Override
-	public void paintComponent(Graphics g) {
-		super.paintComponent(g);
+		@Override
+		public void paintComponent(Graphics g) {
+			super.paintComponent(g);
 
-		int n = data.size();
+			Graphics2D g2 = (Graphics2D) g;
+			Dimension s = getContentPane().getSize();
 
-		if (n<2)
-			return;
-
-		Graphics2D g2 = (Graphics2D) g;
-		Dimension s = getContentPane().getSize();
-		Point topLeft = getContentPane().getLocation();
-		System.out.println(""+topLeft.x+" "+topLeft.y+" "+topLeft.getX()+" "+topLeft.getY());
-		double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).t + 1000 )));
-		double tScale = s.getWidth() / tSize;
-		double ySize = 0;
-		for (Data d: data) 
-			for (double y: d.power)
-				if (y > ySize)
-					ySize = y;
-		
-		double subgraphHeight = s.getHeight() / (2+POWER_NAMES.length);
-		
-		double yScale = subgraphHeight / ySize;
-
-		for (int j = 0 ; j < POWER_NAMES.length ; j++) {
-			g2.drawChars(POWER_NAMES[j].toCharArray(), 0, POWER_NAMES[j].length(), 
-					-topLeft.x, (int)(-topLeft.y + j * yScale * ySize + ySize * .5 * yScale));
+			if (rawMode) {
+				drawRaw(g2, s);
+			}
+			else {
+				drawPower(g2, s);
+			}
 		}
-		g2.drawChars("Attention".toCharArray(), 0, "Attention".length(), 
-				topLeft.x, (int)(topLeft.y + POWER_NAMES.length * yScale * ySize + ySize * .5 * yScale));
-		g2.drawChars("Meditation".toCharArray(), 0, "Meditation".length(), 
-				topLeft.x, (int)(topLeft.y + (1+POWER_NAMES.length) * yScale * ySize + ySize * .5 * yScale));
-
-		Data d0 = null;
 		
+		private void drawRaw(Graphics2D g2, Dimension s) {
+			int n = data.size();
+			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).count + 16)));
+			double tScale = s.getWidth() / tSize;
 
+			double ySize = 0;
+			for (Data d: data) {
+				if (d.raw > ySize)
+					ySize = d.raw;
+				else if (-d.raw > ySize)
+					ySize = d.raw;
+			}
+			
+			ySize *= 2;
+			
+			double yScale = s.getHeight() / ySize;
 
-		for (int i=0; i<n; i++) {
-			Data d1 = data.get(i);
-			if (0<i) { 
-				if (d0.havePower && d1.havePower) { 
-					for (int j=0; j<POWER_NAMES.length; j++) {
-						Line2D lin = new Line2D.Double(topLeft.x + d0.t * tScale, 
-								topLeft.y + (ySize - d0.power[j]) * yScale + j * yScale * ySize,
-								topLeft.x + d1.t * tScale, 
-								topLeft.y + (ySize - d1.power[j]) * yScale + j * yScale * ySize);
+			Data d0 = null;
+
+			for (int i=0; i<n; i++) {
+				Data d1 = data.get(i);
+				if (0<i && d0.haveRaw && d1.haveRaw) { 
+					Line2D lin = new Line2D.Double(d0.count * tScale, 
+							(ySize / 2 - d0.raw) * yScale,
+							d1.count * tScale, 
+							(ySize / 2 - d1.raw) * yScale);
+					g2.draw(lin);					
+				}
+				d0 = d1;
+			}
+		}
+
+		private void drawPower(Graphics2D g2, Dimension s) {
+			int n = data.size();
+			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).t + 1000 )));
+			double tScale = s.getWidth() / tSize;
+			double ySize = 0;
+			for (Data d: data) 
+				for (double y: d.power)
+					if (y > ySize)
+						ySize = y;
+
+			double subgraphHeight = s.getHeight() / (2+POWER_NAMES.length);
+
+			double yScale = subgraphHeight / ySize;
+
+			for (int j = 0 ; j < POWER_NAMES.length ; j++) {
+				g2.drawChars(POWER_NAMES[j].toCharArray(), 0, POWER_NAMES[j].length(), 
+						0, (int)(j * yScale * ySize + ySize * .5 * yScale));
+			}
+			g2.drawChars("Attention".toCharArray(), 0, "Attention".length(), 
+					0, (int)(POWER_NAMES.length * yScale * ySize + ySize * .5 * yScale));
+			g2.drawChars("Meditation".toCharArray(), 0, "Meditation".length(), 
+					0, (int)((1+POWER_NAMES.length) * yScale * ySize + ySize * .5 * yScale));
+
+			Data d0 = null;
+
+			for (int i=0; i<n; i++) {
+				Data d1 = data.get(i);
+				if (0<i) { 
+					if (d0.havePower && d1.havePower) { 
+						for (int j=0; j<POWER_NAMES.length; j++) {
+							Line2D lin = new Line2D.Double(d0.t * tScale, 
+									(ySize - d0.power[j]) * yScale + j * yScale * ySize,
+									d1.t * tScale, 
+									(ySize - d1.power[j]) * yScale + j * yScale * ySize);
+							g2.draw(lin);
+						}
+					}
+					if (d0.haveAttention && d1.haveAttention) {
+						Line2D lin = new Line2D.Double(d0.t * tScale, 
+								(1 - d0.attention) * subgraphHeight + POWER_NAMES.length * yScale * ySize,
+								d1.t * tScale, 
+								(1 - d1.attention) * subgraphHeight + POWER_NAMES.length * yScale * ySize);
+						g2.draw(lin);
+					}
+					if (d0.haveMeditation && d1.haveMeditation) {
+						Line2D lin = new Line2D.Double(d0.t * tScale, 
+								(1 - d0.meditation) * subgraphHeight + (1+POWER_NAMES.length) * yScale * ySize,
+								d1.t * tScale, 
+								(1 - d1.meditation) * subgraphHeight + (1+POWER_NAMES.length) * yScale * ySize);
 						g2.draw(lin);
 					}
 				}
-				if (d0.haveAttention && d1.haveAttention) {
-					Line2D lin = new Line2D.Double(topLeft.x + d0.t * tScale, 
-							topLeft.y + (1 - d0.attention) * subgraphHeight + POWER_NAMES.length * yScale * ySize,
-							topLeft.x + d1.t * tScale, 
-							topLeft.y + (1 - d1.attention) * subgraphHeight + POWER_NAMES.length * yScale * ySize);
-					g2.draw(lin);
-				}
-				if (d0.haveMeditation && d1.haveMeditation) {
-					Line2D lin = new Line2D.Double(topLeft.x + d0.t * tScale, 
-							topLeft.y + (1 - d0.meditation) * subgraphHeight + (1+POWER_NAMES.length) * yScale * ySize,
-							topLeft.x + d1.t * tScale, 
-							topLeft.y + (1 - d1.meditation) * subgraphHeight + (1+POWER_NAMES.length) * yScale * ySize);
-					g2.draw(lin);
-				}
+				d0 = d1;
 			}
-			d0 = d1;
 		}
-	}
 	}
 
 
@@ -149,7 +190,14 @@ public class BrainFlex extends JFrame {
 		System.out.println("CONNECTING");
 		dataLink = new BrainLinkSerialLinkLL(comPort); //brainLink);
 		dataLink.start(9600);
-		//dataLink.transmit(0x01); // 0x00 = 9600 baud, 0x0F = 57600 baud,
+		if (mode != MODE_NORMAL) {
+		    dataLink.transmit(mode); 
+		    if (mode >= 0x02)
+		       dataLink.start(57600);
+                    else if (mode == 0x01)
+                       dataLink.start(1200);
+		}
+		//dataLink.start(57600);
 		// 0x00 : 9600 : normal
 		// 0x01 : 1200
 		// 0x02 : 57600 : RAW
@@ -210,9 +258,12 @@ public class BrainFlex extends JFrame {
 
 		while((pos = parseRow(buffer, pos, end)) < end);
 
-		if (lastSignal == 0 && ( curData.havePower || curData.haveAttention || curData.haveMeditation ) ) {
+		if (curData.haveRaw || ( lastSignal == 0 && ( curData.havePower || curData.haveAttention || curData.haveMeditation ) ) ) {
 			data.add(curData);
-			repaint();
+			if (System.currentTimeMillis() - lastPaintTime > 60) {
+				lastPaintTime = System.currentTimeMillis();
+				repaint();
+			}
 		}
 	}
 
@@ -285,7 +336,9 @@ public class BrainFlex extends JFrame {
 			System.out.println("RAW_MARKER "+(0xFF&(int)buffer[pos]));
 		break;
 		case (byte)0x80:
-			System.out.println("RAW "+(short)(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1]))) );
+			curData.raw = (short)(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1])));
+			curData.haveRaw = true;
+			System.out.println("RAW " + curData.raw);
 		break;
 		case (byte)0x81:
 			System.out.println("EEG_POWER unsupported");
@@ -331,7 +384,7 @@ public class BrainFlex extends JFrame {
 				((0xFF & (int)buffer[pos+2]));
 	}
 
-	private static int detectPacket(byte[] buffer, int i) {
+	private int detectPacket(byte[] buffer, int i) {
 		if (buffer.length <= i)
 			return PACKET_MAYBE;
 		if (buffer[i] != (byte)0xAA)
@@ -351,6 +404,7 @@ public class BrainFlex extends JFrame {
 		for (int j=0; j<pLength; j++)
 			sum += buffer[i+3+j];
 		sum ^= (byte)0xFF;
+		signalCount++;
 		if (sum != buffer[i+3+pLength]) {
 			System.out.println("CSUMERROR "+sum+" vs "+buffer[i+3+pLength]);
 			return PACKET_NO;
@@ -379,15 +433,19 @@ public class BrainFlex extends JFrame {
 
 	public class Data {
 		long t;
+		long count;
 		double[] power = new double[BrainFlex.POWER_NAMES.length];
 		boolean havePower;
 		boolean haveMeditation;
 		boolean haveAttention;
+		boolean haveRaw;
 		double meditation;
 		double attention;
+		int raw;
 
 		public Data(long t) {
 			this.t = t;
+			this.count = BrainFlex.this.signalCount - 1;
 		}
 	}
 }

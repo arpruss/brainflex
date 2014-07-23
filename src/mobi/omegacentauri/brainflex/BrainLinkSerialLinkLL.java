@@ -68,7 +68,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 		//	p.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 			iStream = p.getInputStream();
 			oStream = p.getOutputStream();
-			oStream.write(new byte[] { '*', 'O', 0, (byte)32, 0 });
+			oStream.write(new byte[] { '*' }); // , 'O', 0, (byte)64, 0 });
 		} catch (Exception e) {
 			System.err.println("Ooops "+e);
 			System.exit(1);
@@ -102,6 +102,10 @@ public class BrainLinkSerialLinkLL extends DataLink {
 
 	public void stop() {
 		try {
+			oStream.write(new byte[] { 'Q' });
+		} catch (IOException e) {			
+		}
+		try {
 			iStream.close();
 		} catch (IOException e) {
 		}
@@ -109,6 +113,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 			oStream.close();
 		} catch (IOException e) {
 		}
+		
 		p.close();
 	}
 
