@@ -78,6 +78,8 @@ public class BrainFlex extends JFrame {
 		
 		private void drawRaw(Graphics2D g2, Dimension s) {
 			int n = data.size();
+			if (n<2)
+				return;
 			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).count + 16)));
 			double tScale = s.getWidth() / tSize;
 
@@ -110,6 +112,8 @@ public class BrainFlex extends JFrame {
 
 		private void drawPower(Graphics2D g2, Dimension s) {
 			int n = data.size();
+			if (n<2)
+				return;
 			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).t + 1000 )));
 			double tScale = s.getWidth() / tSize;
 			double ySize = 0;
