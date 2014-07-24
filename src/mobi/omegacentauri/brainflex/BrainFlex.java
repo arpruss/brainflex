@@ -51,11 +51,10 @@ public class BrainFlex extends JFrame {
 	private int lastSignal;
 	private Data curData;
 	private long signalCount;
-	private boolean rawMode;
 	private long lastPaintTime;
 	public static final int MODE_NORMAL = 0;
 	public static final int MODE_RAW = 0x02;
-        private int mode = MODE_NORMAL;
+    private int mode = MODE_NORMAL;
     public boolean done;
     private int pause = -1;
 	private JTextField timeText;
@@ -160,7 +159,7 @@ public class BrainFlex extends JFrame {
 			
 			int n = pause < 0 ? data.size() : pause;
 			
-			if (rawMode) {
+			if (mode == MODE_RAW) {
 				drawRaw(g2, s, n);
 			}
 			else {
@@ -369,7 +368,7 @@ public class BrainFlex extends JFrame {
 		int end = pos + packetLength - 1;
 		pos += 3;
 
-		System.out.println("TIME "+System.currentTimeMillis());
+		rtLog("TIME "+System.currentTimeMillis());
 
 		while((pos = parseRow(buffer, pos, end)) < end);
 
@@ -422,55 +421,55 @@ public class BrainFlex extends JFrame {
 		int v;
 
 		if (excodeLevel > 0) {
-			System.out.println("UNPARSED "+excodeLevel+" "+code);
+			rtLog("UNPARSED "+excodeLevel+" "+code);
 			return;
 		}
 
 		switch(code) {
 		case (byte)0x02:
-			System.out.println("POOR_SIGNAL "+(0xFF&(int)buffer[pos]));
+			rtLog("POOR_SIGNAL "+(0xFF&(int)buffer[pos]));
 		lastSignal = (0xFF)&(int)buffer[pos];
 		break;
 		case (byte)0x03:
-			System.out.println("HEART_RATE "+(0xFF&(int)buffer[pos]));
+			rtLog("HEART_RATE "+(0xFF&(int)buffer[pos]));
 		break;
 		case (byte)0x04:
 			v = 0xFF&(int)buffer[pos];
-		System.out.println("ATTENTION "+v);
+		rtLog("ATTENTION "+v);
 		curData.attention = v / 100.;
 		curData.haveAttention = true;
 		break;
 		case (byte)0x05:
 			v = 0xFF&(int)buffer[pos];
-		System.out.println("MEDITATION "+v);
+		rtLog("MEDITATION "+v);
 		curData.meditation = v / 100.;
 		curData.haveMeditation = true;
 		break;
 		case (byte)0x06:
-			System.out.println("8BIT_RAW "+(0xFF&(int)buffer[pos]));
+			rtLog("8BIT_RAW "+(0xFF&(int)buffer[pos]));
 		break;
 		case (byte)0x07:
-			System.out.println("RAW_MARKER "+(0xFF&(int)buffer[pos]));
+			rtLog("RAW_MARKER "+(0xFF&(int)buffer[pos]));
 		break;
 		case (byte)0x80:
 			curData.raw = (short)(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1])));
 			curData.haveRaw = true;
-			System.out.println("RAW " + curData.raw);
+			rtLog("RAW " + curData.raw);
 		break;
 		case (byte)0x81:
-			System.out.println("EEG_POWER unsupported");
+			rtLog("EEG_POWER unsupported");
 		break;
 		case (byte)0x82:
-			System.out.println("0x82 "+getUnsigned32(buffer,pos));
+			rtLog("0x82 "+getUnsigned32(buffer,pos));
 		break;
 		case (byte)0x83:
 			parseASIC_EEG_POWER(buffer, pos);
 		break;
 		case (byte)0x86:
-			System.out.println("RRINTERVAL "+(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1]))) );
+			rtLog("RRINTERVAL "+(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1]))) );
 		break;
 		default:
-			System.out.println("UNPARSED "+excodeLevel+" "+code);
+			rtLog("UNPARSED "+excodeLevel+" "+code);
 			break;
 		}
 	}
@@ -486,7 +485,7 @@ public class BrainFlex extends JFrame {
 		double sum = 0;
 		for (int i=0; i<POWER_NAMES.length; i++) {
 			int v = getUnsigned24(buffer, pos + 3 * i);
-			System.out.println(POWER_NAMES[i]+" "+v);
+			rtLog(POWER_NAMES[i]+" "+v);
 			curData.power[i] = v;
 			sum += v;
 		}
@@ -523,7 +522,7 @@ public class BrainFlex extends JFrame {
 		sum ^= (byte)0xFF;
 		signalCount++;
 		if (sum != buffer[i+3+pLength]) {
-			System.out.println("CSUMERROR "+sum+" vs "+buffer[i+3+pLength]);
+			rtLog("CSUMERROR "+sum+" vs "+buffer[i+3+pLength]);
 			return PACKET_NO;
 		}
 		return 4+pLength;
@@ -544,8 +543,12 @@ public class BrainFlex extends JFrame {
 		}
 		catch (InterruptedException e)
 		{
-			System.out.println("Error while sleeping: " + e);
 		}
+	}
+	
+	public void rtLog(String s) {
+		if (mode < MODE_RAW)
+			System.out.println(s);
 	}
 
 	public class Data {
