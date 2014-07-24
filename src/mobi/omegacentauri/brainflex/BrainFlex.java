@@ -7,13 +7,18 @@
 
 package mobi.omegacentauri.brainflex;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.geom.Line2D;
+import java.awt.geom.Line2D.Double;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -24,14 +29,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class BrainFlex extends JFrame {
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	static final int PACKET_NO = -1;
 	static final int PACKET_MAYBE = 0;
@@ -39,6 +43,7 @@ public class BrainFlex extends JFrame {
 		"low-gamma", "mid-gamma"
 	};
 	private List<Data> data;
+	private List<Mark> marks;
 	public long t0;
 	private int lastSignal;
 	private Data curData;
@@ -48,19 +53,67 @@ public class BrainFlex extends JFrame {
 	public static final int MODE_NORMAL = 0;
 	public static final int MODE_RAW = 0x02;
         private int mode = MODE_NORMAL;
+    public boolean done;
 
 	public BrainFlex() {
+		done = false;
 		t0 = System.currentTimeMillis();
 		signalCount = 0;
 		data = new ArrayList<Data>();
+		marks = new ArrayList<Mark>();
 		lastSignal = 100;
 
 		setSize(640,480);
-		add(new MyPanel());
+//		setLayout(new BorderLayout());
+//		MyPanel graph = new MyPanel();
+//		graph.setLayout(new FlowLayout(FlowLayout.RIGHT));
+//		JButton markButton = new JButton("!");
+//		markButton.addActionListener(new ActionListener() {		
+//			@Override
+//			public void actionPerformed(ActionEvent e) {
+//				Mark mark = new Mark(System.currentTimeMillis()-t0, signalCount);
+//				System.out.println("Mark "+mark.t+ " "+mark.count);
+//				marks.add(mark);
+//			}
+//		}); 	
+//		graph.add(markButton);
+//		add(graph,BorderLayout.SOUTH);
+//		add(new MyPanel());
+
+		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+		MyPanel graph = new MyPanel();
+		add(graph);
+		JButton markButton = new JButton("Mark");
+		markButton.addActionListener(new ActionListener() {		
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Mark mark = new Mark(System.currentTimeMillis()-t0, signalCount);
+				System.out.println("Mark "+mark.t+ " "+mark.count);
+				marks.add(mark);
+			}
+		}); 	
+		JButton exitButton = new JButton("Exit");
+		exitButton.addActionListener(new ActionListener() {		
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				done = true;
+			}
+		}); 	
+
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
+		buttonPanel.add(exitButton);
+		buttonPanel.add(markButton);
+		
+		add(buttonPanel);
+		
 		setVisible(true);
 	}
 
 	private class MyPanel extends JPanel {
+		private static final long serialVersionUID = -1055183524854368685L;
+		private static final int GRAPH_SPACING = 3;
+
 		@Override
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
@@ -94,7 +147,15 @@ public class BrainFlex extends JFrame {
 			ySize *= 2;
 			
 			double yScale = s.getHeight() / ySize;
+			
+			g2.setColor(Color.BLUE);
+			for (Mark m: marks) {
+				Line2D lin = new Line2D.Double(m.count * tScale, 0,
+						m.count * tScale, s.getHeight());
+				g2.draw(lin);
+			}
 
+			g2.setColor(Color.BLACK);
 			Data d0 = null;
 
 			for (int i=0; i<n; i++) {
@@ -122,19 +183,34 @@ public class BrainFlex extends JFrame {
 					if (y > ySize)
 						ySize = y;
 
-			double subgraphHeight = s.getHeight() / (2+POWER_NAMES.length);
+			double subgraphContentHeight = (s.getHeight() - GRAPH_SPACING * (1+POWER_NAMES.length) ) / (2+POWER_NAMES.length);
+			double subgraphHeight = subgraphContentHeight + GRAPH_SPACING;
+			double yScale = subgraphContentHeight / ySize;
 
-			double yScale = subgraphHeight / ySize;
+			g2.setColor(Color.BLUE);
+			for (Mark m: marks) {
+				Line2D lin = new Line2D.Double(m.t * tScale, 0,
+						m.t * tScale, s.getHeight());
+				g2.draw(lin);
+			}
 
+			g2.setColor(Color.GREEN);
+			for (int j = 0 ; j < POWER_NAMES.length + 1 ; j++) {
+				Line2D lin = new Line2D.Double(0, subgraphContentHeight * ( j + 1 ) + GRAPH_SPACING / 2,
+						s.getWidth(), subgraphContentHeight * ( j + 1 ) + GRAPH_SPACING / 2);
+				g2.draw(lin);
+			}
+			
 			for (int j = 0 ; j < POWER_NAMES.length ; j++) {
 				g2.drawChars(POWER_NAMES[j].toCharArray(), 0, POWER_NAMES[j].length(), 
-						0, (int)(j * yScale * ySize + ySize * .5 * yScale));
+						0, (int)(j * subgraphHeight + ySize * .5 * yScale));
 			}
 			g2.drawChars("Attention".toCharArray(), 0, "Attention".length(), 
-					0, (int)(POWER_NAMES.length * yScale * ySize + ySize * .5 * yScale));
+					0, (int)(POWER_NAMES.length * subgraphHeight + ySize * .5 * yScale));
 			g2.drawChars("Meditation".toCharArray(), 0, "Meditation".length(), 
-					0, (int)((1+POWER_NAMES.length) * yScale * ySize + ySize * .5 * yScale));
+					0, (int)((1+POWER_NAMES.length) * subgraphHeight + ySize * .5 * yScale));
 
+			g2.setColor(Color.BLACK);
 			Data d0 = null;
 
 			for (int i=0; i<n; i++) {
@@ -143,24 +219,24 @@ public class BrainFlex extends JFrame {
 					if (d0.havePower && d1.havePower) { 
 						for (int j=0; j<POWER_NAMES.length; j++) {
 							Line2D lin = new Line2D.Double(d0.t * tScale, 
-									(ySize - d0.power[j]) * yScale + j * yScale * ySize,
+									(ySize - d0.power[j]) * yScale + j * subgraphHeight,
 									d1.t * tScale, 
-									(ySize - d1.power[j]) * yScale + j * yScale * ySize);
+									(ySize - d1.power[j]) * yScale + j * subgraphHeight);
 							g2.draw(lin);
 						}
 					}
 					if (d0.haveAttention && d1.haveAttention) {
 						Line2D lin = new Line2D.Double(d0.t * tScale, 
-								(1 - d0.attention) * subgraphHeight + POWER_NAMES.length * yScale * ySize,
+								(1 - d0.attention) * subgraphContentHeight + POWER_NAMES.length * subgraphHeight,
 								d1.t * tScale, 
-								(1 - d1.attention) * subgraphHeight + POWER_NAMES.length * yScale * ySize);
+								(1 - d1.attention) * subgraphContentHeight + POWER_NAMES.length * subgraphHeight);
 						g2.draw(lin);
 					}
 					if (d0.haveMeditation && d1.haveMeditation) {
 						Line2D lin = new Line2D.Double(d0.t * tScale, 
-								(1 - d0.meditation) * subgraphHeight + (1+POWER_NAMES.length) * yScale * ySize,
+								(1 - d0.meditation) * subgraphContentHeight + (1+POWER_NAMES.length) * subgraphHeight,
 								d1.t * tScale, 
-								(1 - d1.meditation) * subgraphHeight + (1+POWER_NAMES.length) * yScale * ySize);
+								(1 - d1.meditation) * subgraphContentHeight + (1+POWER_NAMES.length) * subgraphHeight);
 						g2.draw(lin);
 					}
 				}
@@ -187,12 +263,10 @@ public class BrainFlex extends JFrame {
 
 		byte[] buffer = new byte[0];
 
-		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-
 		BrainLinkSerialLinkLL dataLink;
 
 		System.out.println("CONNECTING");
-		dataLink = new BrainLinkSerialLinkLL(comPort); //brainLink);
+		dataLink = new BrainLinkSerialLinkLL(comPort); 
 		dataLink.start(9600);
 		if (mode != MODE_NORMAL) {
 		    dataLink.transmit(mode); 
@@ -211,7 +285,7 @@ public class BrainFlex extends JFrame {
 		//		sleep(100);
 		System.out.println("CONNECTED");
 
-		do {
+		while (!done) {
 			sleep(50);
 			byte[] data = dataLink.receiveBytes();
 			if (data.length > 0) {
@@ -240,15 +314,9 @@ public class BrainFlex extends JFrame {
 					buffer = newBuffer;
 				}
 			}
-			//		}
-		} while(! in.ready());
+		} 
 
 		dataLink.stop();
-
-		//		System.out.println("TERMINATED");
-
-		//		dataLink.stop();
-		//		brainLink.disconnect();
 	}
 
 	private void parsePacket(byte[] buffer, int pos, int packetLength) {
@@ -450,6 +518,16 @@ public class BrainFlex extends JFrame {
 		public Data(long t) {
 			this.t = t;
 			this.count = BrainFlex.this.signalCount - 1;
+		}
+	}
+	
+	public class Mark {
+		long t;
+		long count;
+		
+		public Mark(long t, long count) {
+			this.t = t;
+			this.count = count;
 		}
 	}
 }
