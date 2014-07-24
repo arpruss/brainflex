@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +35,8 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 public class BrainFlex extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -54,6 +57,8 @@ public class BrainFlex extends JFrame {
 	public static final int MODE_RAW = 0x02;
         private int mode = MODE_NORMAL;
     public boolean done;
+    private int pause = -1;
+	private JTextField timeText;
 
 	public BrainFlex() {
 		done = false;
@@ -63,7 +68,6 @@ public class BrainFlex extends JFrame {
 		marks = new ArrayList<Mark>();
 		lastSignal = 100;
 
-		setSize(640,480);
 //		setLayout(new BorderLayout());
 //		MyPanel graph = new MyPanel();
 //		graph.setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -80,14 +84,20 @@ public class BrainFlex extends JFrame {
 //		add(graph,BorderLayout.SOUTH);
 //		add(new MyPanel());
 
+		setSize(640,480);
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+
 		MyPanel graph = new MyPanel();
-		add(graph);
+		getContentPane().add(graph);
+
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
+
 		JButton markButton = new JButton("Mark");
 		markButton.addActionListener(new ActionListener() {		
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Mark mark = new Mark(System.currentTimeMillis()-t0, signalCount);
+				Mark mark = new Mark();
 				System.out.println("Mark "+mark.t+ " "+mark.count);
 				marks.add(mark);
 			}
@@ -99,38 +109,70 @@ public class BrainFlex extends JFrame {
 				done = true;
 			}
 		}); 	
+		JButton pauseButton = new JButton("Pause");
+		pauseButton.addActionListener(new ActionListener() {		
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (pause < 0) {
+					pause = data.size();
+				}
+				else {
+					pause = -1;
+				}
+			}
+		}); 	
+		timeText = new JTextField();
+		setTime(0, 0);
+		timeText.setEditable(false);
+		Dimension m = timeText.getMaximumSize();
+		Dimension p = timeText.getPreferredSize();
+		m.height = p.height;
+		timeText.setMaximumSize(m);
 
-		JPanel buttonPanel = new JPanel();
-		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
-		buttonPanel.add(exitButton);
+		buttonPanel.add(pauseButton);
 		buttonPanel.add(markButton);
+		buttonPanel.add(exitButton);
+		buttonPanel.add(timeText);
 		
-		add(buttonPanel);
+		getContentPane().add(buttonPanel);
 		
 		setVisible(true);
+	}
+	
+	private void setTime(long t, long c) {
+		timeText.setText(new DecimalFormat("0.000").format(t/1000.)+"s ("+c+" packets)");
 	}
 
 	private class MyPanel extends JPanel {
 		private static final long serialVersionUID = -1055183524854368685L;
 		private static final int GRAPH_SPACING = 3;
+		
+		public MyPanel() {
+			super();
+		}
 
 		@Override
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
 
 			Graphics2D g2 = (Graphics2D) g;
-			Dimension s = getContentPane().getSize();
-
+			Dimension s = getSize();
+			
+			int n = pause < 0 ? data.size() : pause;
+			
 			if (rawMode) {
-				drawRaw(g2, s);
+				drawRaw(g2, s, n);
 			}
 			else {
-				drawPower(g2, s);
+				drawPower(g2, s, n);
 			}
+			
+			long t = n > 0 ? data.get(n-1).t : 0;
+			long c = n > 0 ? data.get(n-1).count : 0;
+			setTime(t,c);
 		}
 		
-		private void drawRaw(Graphics2D g2, Dimension s) {
-			int n = data.size();
+		private void drawRaw(Graphics2D g2, Dimension s, int n) {
 			if (n<2)
 				return;
 			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).count + 16)));
@@ -171,8 +213,7 @@ public class BrainFlex extends JFrame {
 			}
 		}
 
-		private void drawPower(Graphics2D g2, Dimension s) {
-			int n = data.size();
+		private void drawPower(Graphics2D g2, Dimension s, int n) {
 			if (n<2)
 				return;
 			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).t + 1000 )));
@@ -196,8 +237,8 @@ public class BrainFlex extends JFrame {
 
 			g2.setColor(Color.GREEN);
 			for (int j = 0 ; j < POWER_NAMES.length + 1 ; j++) {
-				Line2D lin = new Line2D.Double(0, subgraphContentHeight * ( j + 1 ) + GRAPH_SPACING / 2,
-						s.getWidth(), subgraphContentHeight * ( j + 1 ) + GRAPH_SPACING / 2);
+				Line2D lin = new Line2D.Double(0, subgraphHeight * ( j + 1 ) + GRAPH_SPACING / 2,
+						s.getWidth(), subgraphHeight * ( j + 1 ) + GRAPH_SPACING / 2);
 				g2.draw(lin);
 			}
 			
@@ -316,7 +357,9 @@ public class BrainFlex extends JFrame {
 			}
 		} 
 
+		System.out.println("Terminated");
 		dataLink.stop();
+		dispose();
 	}
 
 	private void parsePacket(byte[] buffer, int pos, int packetLength) {
@@ -334,7 +377,9 @@ public class BrainFlex extends JFrame {
 			data.add(curData);
 			if (System.currentTimeMillis() - lastPaintTime > 60) {
 				lastPaintTime = System.currentTimeMillis();
-				repaint();
+				if (pause < 0) {
+					repaint();
+				}
 			}
 		}
 	}
@@ -525,9 +570,9 @@ public class BrainFlex extends JFrame {
 		long t;
 		long count;
 		
-		public Mark(long t, long count) {
-			this.t = t;
-			this.count = count;
+		public Mark() {
+			this.t = System.currentTimeMillis()-t0;
+			this.count = signalCount;
 		}
 	}
 }

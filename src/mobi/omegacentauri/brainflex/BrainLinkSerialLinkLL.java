@@ -96,7 +96,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 			byte[] out = p.readBytes(length, scaleTimeout(5*length)); 
 			if (out.length == length) {
 				buff = out;
-				BrainFlex.dumpData(out);
+				//BrainFlex.dumpData(out);
 			}
 		} catch (SerialPortException e) {
 		} catch (SerialPortTimeoutException e) {
