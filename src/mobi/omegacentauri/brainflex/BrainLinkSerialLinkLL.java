@@ -1,7 +1,7 @@
 /**
 *
-* Copyright (c) 2013 Alexander Pruss
-* Distributed under the GNU GPL v2 or later. For full terms see the file COPYING.
+* Copyright (c) 2014 Alexander Pruss
+* Distributed under the GNU GPL v3 or later. For full terms see the file COPYING.
 *
 */
 
@@ -9,13 +9,11 @@
 
 package mobi.omegacentauri.brainflex;
 
-import gnu.io.CommPortIdentifier;
-import gnu.io.SerialPort;
-
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Enumeration;
+
+import jssc.SerialPort;
+import jssc.SerialPortException;
+import jssc.SerialPortTimeoutException;
 
 public class BrainLinkSerialLinkLL extends DataLink {
   // Use information from: http://www.brainlinksystem.com/brainlink-hardware-description
@@ -29,46 +27,17 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	private static final byte[] BAUD38400 = { '*', 'C', 0, (byte)(204&0xFF), -2 };
 
 	private SerialPort p;
-	private InputStream iStream;
-	private OutputStream oStream;
 	private int baud;
 
 	public BrainLinkSerialLinkLL(String port) {
-		CommPortIdentifier id;
+//		CommPortIdentifier id;
 		try {
-//			id = null;
-//			CommPortIdentifier ignoreCaseID = null;
-//			System.out.println("Searching for "+port);
-//			Enumeration<CommPortIdentifier> ids = CommPortIdentifier.getPortIdentifiers();
-//			while(ids.hasMoreElements()) {
-//				CommPortIdentifier curID = ids.nextElement();
-//				System.out.println("Have "+curID.getName());
-//				if (curID.getName().equals(port)) {
-//					id = curID;
-//					break;
-//				}
-//				if (curID.getName().equalsIgnoreCase(port)) {
-//					ignoreCaseID = curID;
-//				}
-//			}
-//			if (id == null)
-//				id = ignoreCaseID;
-			String searchPort;
-			if (System.getProperty("os.name").toLowerCase().contains("windows"))
-				searchPort = port.toUpperCase();
-			else
-				searchPort = port;
-			id = CommPortIdentifier.getPortIdentifier(searchPort);
-			if (id == null)
-				throw new IOException("Cannot find serial port "+searchPort);
-
-			System.out.println("Opening "+id.getName());
-			p = (SerialPort) id.open("BrainLinkSerialLinkLL", 5000);
-			System.out.println("Opened port "+p.getName());
-		//	p.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
-			iStream = p.getInputStream();
-			oStream = p.getOutputStream();
-			oStream.write(new byte[] { '*' }); // , 'O', 0, (byte)64, 0 });
+			System.out.println("Opening "+port);
+			p = new SerialPort(port);
+			if (! p.openPort())
+				throw(new IOException("Cannot open "+p.getPortName()));
+			System.out.println("Opened port "+p.getPortName());
+			p.writeByte((byte)'*');
 		} catch (Exception e) {
 			System.err.println("Ooops "+e);
 			System.exit(1);
@@ -78,124 +47,97 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	public void start(int baud) {
 		this.baud = baud;
 		try {
-			oStream.write(new byte[] { '*' });
 			if (baud == 9600)
-				oStream.write(BAUD9600);
+				p.writeBytes(BAUD9600);
 			else if (baud == 57600)
-				oStream.write(BAUD57600);
+				p.writeBytes(BAUD57600);
 			else if (baud == 1200)
-				oStream.write(BAUD1200);
+				p.writeBytes(BAUD1200);
 			else if (baud == 19200)
-				oStream.write(BAUD19200);
+				p.writeBytes(BAUD19200);
 			else if (baud == 115200)
-				oStream.write(BAUD115200);
+				p.writeBytes(BAUD115200);
 			else if (baud == 38400)
-				oStream.write(BAUD38400);
+				p.writeBytes(BAUD38400);
 			else {
 				System.err.println("Unrecognized baud "+baud);
 			}
-		} catch (IOException e) {
-			System.err.println("Ooops "+e);
+		} catch (SerialPortException e) {
 		}
-
 	}
 
 	public void stop() {
 		try {
-			oStream.write(new byte[] { 'Q' });
-		} catch (IOException e) {			
+			p.writeByte((byte)'Q');
+		} catch (SerialPortException e) {			
 		}
 		try {
-			iStream.close();
-		} catch (IOException e) {
+			p.closePort();
+		} catch (SerialPortException e) {
 		}
-		try {
-			oStream.close();
-		} catch (IOException e) {
-		}
-		
-		p.close();
 	}
 
 	@Override
 	public byte[] receiveBytes() {
 		byte[] buff = new byte[0];
-		byte[] oneByte = new byte[1];
 
 		try {
-			oStream.write(new byte[] { '*','r' } );
-			if (!readUntil(iStream,(byte)'*',50) || !readUntil(iStream,(byte)'r',50))
+			p.writeBytes(new byte[] { '*','r' } );
+			if (!readUntil((byte)'*',100) || !readUntil((byte)'r',600))
 				return buff;
-			if (!readBytes(iStream,oneByte,50)) 
+			byte[] oneByte = p.readBytes(1, scaleTimeout(50));
+			if (oneByte.length != 1)
 				return buff;
 			int length = (0xFF&(int)(oneByte[0]));
 			length = (length-1)&0xFF;
 			if (length == 0)
 				return buff;
 			//System.out.println("data "+length);
-			buff = new byte[length]; 
-			if(!readBytes(iStream,buff,5*length))
-				return buff;
-			BrainFlex.dumpData(buff);
-		} catch (IOException e) {
+			byte[] out = p.readBytes(length, scaleTimeout(5*length)); 
+			if (out.length == length) {
+				buff = out;
+				BrainFlex.dumpData(out);
+			}
+		} catch (SerialPortException e) {
+		} catch (SerialPortTimeoutException e) {
 		}
 
 		return buff;
 	}
 
 	// Timeouts designed for 9600 baud
-	private boolean readUntil(InputStream stream, byte b, long timeout) {
-		byte[] oneByte = new byte[1];
+	private boolean readUntil(byte b, int timeout) {
 		long t1 = getTimeoutTime(timeout);
 		do {
 			try {
-				if (0 < stream.available() && 
-						1==stream.read(oneByte) && 
-						oneByte[0] == b)
+				byte[] oneByte = p.readBytes(1, (int)(1+t1-System.currentTimeMillis()));
+				if (oneByte[0] == b)
 					return true;
-			} catch (IOException e) {
+			} catch (SerialPortException e) {
 				return false;
+			} catch (SerialPortTimeoutException e) {
 			}
 		} while(System.currentTimeMillis() <= t1);
 		return false;
 	}
 	
-	private long getTimeoutTime(long timeout) {
+	private int scaleTimeout(int timeout) {
+		return timeout * 9600 / baud;
+	}
+	
+	private long getTimeoutTime(int timeout) {
 		timeout = timeout * 9600 / baud;
 		if (timeout>0)
 			timeout=2;
 		return System.currentTimeMillis() + timeout;
 	}
 
-	private boolean readBytes(InputStream stream, byte[] data, long timeout) {
-		long t1 = getTimeoutTime(timeout);
-
-		int i = 0;
-		while (i < data.length && System.currentTimeMillis() <= t1) {
-			int avail;
-			try {
-				avail = stream.available();
-				if (0<avail) {
-					if (avail > data.length - i)
-						avail = data.length - i;
-					i += stream.read(data, i, avail);
-				}
-			} catch (IOException e) {
-				return false;
-			}
-		}
-
-		return i == data.length;
-	}
-
 	@Override
 	public void transmit(byte... data) {
 		try {
-			oStream.write('*');
-			oStream.write('t');
-			oStream.write(new byte[] { (byte)data.length });
-			oStream.write(data);
-		} catch (IOException e) {
+			p.writeBytes(new byte[] { (byte)'*', (byte)'t', (byte)data.length });
+			p.writeBytes(data);
+		} catch (SerialPortException e) {
 		}
 	}
 

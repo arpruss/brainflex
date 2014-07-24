@@ -1,9 +1,9 @@
 /**
- *
- * Copyright (c) 2013 Alexander Pruss
- * Distributed under the GNU GPL v2 or later. For full terms see the file COPYING.
- *
- */
+*
+* Copyright (c) 2014 Alexander Pruss
+* Distributed under the GNU GPL v3 or later. For full terms see the file COPYING.
+*
+*/
 
 package mobi.omegacentauri.brainflex;
 
