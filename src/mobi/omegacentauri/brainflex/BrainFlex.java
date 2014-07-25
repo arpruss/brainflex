@@ -367,7 +367,6 @@ public class BrainFlex extends JFrame {
 		System.out.println("CONNECTED");
 
 		while (!done) {
-			sleep(50);
 			byte[] data = dataLink.receiveBytes();
 			if (data.length > 0) {
 				//brainLink.setFullColorLED(Color.BLUE);
