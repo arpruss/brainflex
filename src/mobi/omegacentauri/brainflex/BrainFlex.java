@@ -227,7 +227,17 @@ public class BrainFlex extends JFrame {
 		private void drawRaw(Graphics2D g2, Dimension s, List<Data> data, int n) {
 			if (n<2)
 				return;
-			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).count + 16)));
+
+			long maxT = data.get(n-1).count;
+			long startT = 0;
+			double tSize;
+			if (maxT > 1500) {
+				startT = maxT - 1500;
+				tSize = 1500;
+			}
+			else {
+				tSize = Math.pow(2, Math.ceil(log2(maxT - startT + 16)));
+			}
 			double tScale = s.getWidth() / tSize;
 
 			double ySize = 0;
@@ -244,7 +254,7 @@ public class BrainFlex extends JFrame {
 			
 			g2.setColor(Color.BLUE);
 			for (Mark m: marks) {
-				Line2D lin = new Line2D.Double(m.count * tScale, 0,
+				Line2D lin = new Line2D.Double((m.count - startT) * tScale, 0,
 						m.count * tScale, s.getHeight());
 				g2.draw(lin);
 			}
@@ -254,10 +264,10 @@ public class BrainFlex extends JFrame {
 
 			for (int i=0; i<n; i++) {
 				Data d1 = data.get(i);
-				if (0<i && d0.haveRaw && d1.haveRaw) { 
-					Line2D lin = new Line2D.Double(d0.count * tScale, 
+				if (0<i && d0.count >= startT && d0.haveRaw && d1.haveRaw) { 
+					Line2D lin = new Line2D.Double((d0.count - startT) * tScale, 
 							(ySize / 2 - d0.raw) * yScale,
-							d1.count * tScale, 
+							(d1.count - startT) * tScale, 
 							(ySize / 2 - d1.raw) * yScale);
 					g2.draw(lin);					
 				}
