@@ -8,6 +8,7 @@
 package mobi.omegacentauri.brainflex;
 
 public abstract class DataLink {
+	// returns null if nothing available
 	 public abstract byte[] receiveBytes();
 
 	 public abstract void transmit(byte... data);
@@ -26,5 +27,6 @@ public abstract class DataLink {
 	
 	public abstract void stop();
 
+	// quick pre-initialization, possibly at a different baud rate from the main one
 	public abstract void preStart(int baud, byte[] data);
 }

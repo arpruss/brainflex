@@ -60,8 +60,8 @@ public class BrainFlex extends JFrame {
     private int pause = -1;
 	private JTextField timeText;
 
-    private boolean customBrainlinkFW = false; // use only with the custom firmware from https://github.com/arpruss/brainflex
-    private int mode = MODE_NORMAL;
+    private boolean customBrainlinkFW = true; // use only with the custom firmware from https://github.com/arpruss/brainflex
+    private int mode = MODE_RAW;
     static final private boolean rawDump = false;
 
 	public BrainFlex() {
@@ -365,33 +365,42 @@ public class BrainFlex extends JFrame {
 		//dataLink.start(1200);
 		//		sleep(100);
 		System.out.println("CONNECTED");
+		
+		final byte[] empty = new byte[0];
 
 		while (!done) {
 			byte[] data = dataLink.receiveBytes();
-			if (data.length > 0) {
-				//brainLink.setFullColorLED(Color.BLUE);
+			if (data != null) {
 				buffer = concat(buffer, data);
 				int skipTo = 0;
 				for (int i = 0; i < buffer.length; i++) {
-					int length = detectPacket(buffer, i);
-					if (length == PACKET_MAYBE) {
-						byte[] newBuffer = new byte[buffer.length - i];
-						System.arraycopy(buffer, i, newBuffer, 0, buffer.length - i);
-						buffer = newBuffer;
-						skipTo = 0;
-						break;
-					}
-					else if (length > 0) {
-						parsePacket(buffer, i, length);
-						i += length - 1;
+					if (buffer[i] == (byte)0xAA) {
+						int length = detectPacket0(buffer, i);
+						if (length == PACKET_MAYBE) {
+							// possible start of unfinished packet
+							byte[] newBuffer = new byte[buffer.length - i];
+							System.arraycopy(buffer, i, newBuffer, 0, buffer.length - i);
+							buffer = newBuffer;
+							skipTo = 0;
+							break;
+						}
+						else if (length > 0) {
+							parsePacket(buffer, i, length);
+							i += length - 1;
+						}
 					}
 					skipTo = i + 1;
 				}
 
 				if (skipTo > 0) {
-					byte[] newBuffer = new byte[buffer.length - skipTo];
-					System.arraycopy(buffer, skipTo, newBuffer, 0, buffer.length - skipTo);
-					buffer = newBuffer;
+					if (buffer.length == skipTo) {
+						buffer = empty;
+					}
+					else {
+						byte[] newBuffer = new byte[buffer.length - skipTo];
+						System.arraycopy(buffer, skipTo, newBuffer, 0, buffer.length - skipTo);
+						buffer = newBuffer;
+					}
 				}
 			}
 		} 
@@ -540,11 +549,12 @@ public class BrainFlex extends JFrame {
 				((0xFF & (int)buffer[pos+2]));
 	}
 
-	private int detectPacket(byte[] buffer, int i) {
-		if (buffer.length <= i)
-			return PACKET_MAYBE;
-		if (buffer[i] != (byte)0xAA)
-			return PACKET_NO;
+// called only if buffer[i] == 0xAA	
+	private int detectPacket0(byte[] buffer, int i) {
+//		if (buffer.length <= i)
+//			return PACKET_MAYBE;
+//		if (buffer[i] != (byte)0xAA)
+//			return PACKET_NO;
 		if (buffer.length <= i+1)
 			return PACKET_MAYBE;
 		if (buffer[i+1] != (byte)0xAA)

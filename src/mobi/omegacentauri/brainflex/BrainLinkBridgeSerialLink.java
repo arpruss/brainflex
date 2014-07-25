@@ -84,17 +84,18 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 	@Override
 	public byte[] receiveBytes() {
 		try {
-			return p.readBytes(128, scaleTimeout(128));
+			byte[] data = p.readBytes();
+			if (data != null)
+				return data;
 		} catch (SerialPortException e) {
-		} catch (SerialPortTimeoutException e) {
 		}
 
-		return new byte[0];
+		return null;
 	}
 
-	private int scaleTimeout(int timeout) {
-		return timeout * 9600 / baud;
-	}
+//	private int scaleTimeout(int timeout) {
+//		return timeout * 9600 / baud;
+//	}
 	
 	@Override
 	public void transmit(byte... data) {
@@ -106,11 +107,16 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 
 	@Override
 	public void clearBuffer() {
+		try {
+			p.readBytes();
+		} catch (SerialPortException e) {
+		}
 	}
 
 	public void preStart(int preBaud, byte[] data) {
 		setBaud(preBaud);
 		try {
+			// Use the standard Brainlink transmit interface
 			p.writeBytes(new byte[] { '*', 't', (byte)data.length } );
 			p.writeBytes(data);
 		} catch (SerialPortException e) {			

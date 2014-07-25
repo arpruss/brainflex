@@ -83,30 +83,26 @@ public class BrainLinkSerialLinkLL extends DataLink {
 
 	@Override
 	public byte[] receiveBytes() {
-		byte[] buff = new byte[0];
-
 		try {
 			p.writeBytes(new byte[] { '*','r' } );
 			if (!readUntil((byte)'*',100) || !readUntil((byte)'r',600))
-				return buff;
+				return null;
 			byte[] oneByte = p.readBytes(1, scaleTimeout(50));
 			if (oneByte.length != 1)
-				return buff;
+				return null;
 			int length = (0xFF&(int)(oneByte[0]));
 			length = (length-1)&0xFF;
 			if (length == 0)
-				return buff;
+				return null;
 			//System.out.println("data "+length);
 			byte[] out = p.readBytes(length, scaleTimeout(5*length)); 
-			if (out.length == length) {
-				buff = out;
-				//BrainFlex.dumpData(out);
-			}
+			if (out != null && out.length == length) 
+				return out;
 		} catch (SerialPortException e) {
 		} catch (SerialPortTimeoutException e) {
 		}
 
-		return buff;
+		return null;
 	}
 
 	// Timeouts designed for 9600 baud
