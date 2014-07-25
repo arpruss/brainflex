@@ -49,6 +49,7 @@ public class BrainFlex extends JFrame {
 	private List<Data> data;
 	private List<Mark> marks;
 	public long t0;
+	private long badSignals;
 	private int lastSignal;
 	private Data curData;
 	private long packetCount;
@@ -58,9 +59,11 @@ public class BrainFlex extends JFrame {
     public boolean done;
     private int pause = -1;
 	private JTextField timeText;
+	private long pausedBadSignalCount;
+
 
     private boolean customBrainlinkFW = true; // use only with the custom firmware from https://github.com/arpruss/brainflex
-    private int mode = MODE_NORMAL;
+    private int mode = MODE_RAW;
     static final private boolean rawDump = false;
 
 	public BrainFlex() {
@@ -70,6 +73,7 @@ public class BrainFlex extends JFrame {
 		data = new ArrayList<Data>();
 		marks = new ArrayList<Mark>();
 		lastSignal = 100;
+		badSignals = 0;
 
 //		setLayout(new BorderLayout());
 //		MyPanel graph = new MyPanel();
@@ -118,6 +122,7 @@ public class BrainFlex extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if (pause < 0) {
 					pause = data.size();
+					pausedBadSignalCount = badSignals;
 				}
 				else {
 					pause = -1;
@@ -125,7 +130,7 @@ public class BrainFlex extends JFrame {
 			}
 		}); 	
 		timeText = new JTextField();
-		setTime(0, 0);
+		setTime(0, 0, 0);
 		timeText.setEditable(false);
 		Dimension m = timeText.getMaximumSize();
 		Dimension p = timeText.getPreferredSize();
@@ -142,8 +147,8 @@ public class BrainFlex extends JFrame {
 		setVisible(true);
 	}
 	
-	private void setTime(long t, long c) {
-		timeText.setText(new DecimalFormat("0.000").format(t/1000.)+"s ("+c+" packets)");
+	private void setTime(long t, long c, long bad) {
+		timeText.setText(new DecimalFormat("0.000").format(t/1000.)+"s ("+c+" good packets, "+bad+" bad packets)");
 	}
 
 	private class MyPanel extends JPanel {
@@ -177,7 +182,7 @@ public class BrainFlex extends JFrame {
 			
 			long t = n > 0 ? dataCopy.get(n-1).t : 0;
 			long c = n > 0 ? dataCopy.get(n-1).count : 0;
-			setTime(t,c);
+			setTime(t,c, pause < 0 ? badSignals : pausedBadSignalCount);
 		}
 		
 		private void drawRaw(Graphics2D g2, Dimension s, List<Data> data, int n) {
@@ -550,8 +555,10 @@ public class BrainFlex extends JFrame {
 		if (buffer.length <= i+2)
 			return PACKET_MAYBE;
 		int pLength = 0xFF & (int)buffer[i+2];
-		if (pLength > 169)
+		if (pLength > 169) {
+			badSignals++;
 			return PACKET_NO;
+		}
 		if (buffer.length < i+4+pLength)
 			return PACKET_MAYBE;
 		byte sum = 0;
@@ -559,6 +566,7 @@ public class BrainFlex extends JFrame {
 			sum += buffer[i+3+j];
 		packetCount++;
 		if ((sum ^ buffer[i+3+pLength]) != (byte)0xFF) {
+			badSignals++;
 			rtLog("CSUMERROR "+sum+" vs "+buffer[i+3+pLength]);
 			return PACKET_NO;
 		}
