@@ -29,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -52,7 +51,7 @@ public class BrainFlex extends JFrame {
 	public long t0;
 	private int lastSignal;
 	private Data curData;
-	private long signalCount;
+	private long packetCount;
 	private long lastPaintTime;
 	public static final int MODE_NORMAL = 0;
 	public static final int MODE_RAW = 0x02;
@@ -60,15 +59,15 @@ public class BrainFlex extends JFrame {
     private int pause = -1;
 	private JTextField timeText;
 
-    private boolean customBrainlinkFW = false; // use only with the custom firmware from https://github.com/arpruss/brainflex
+    private boolean customBrainlinkFW = true; // use only with the custom firmware from https://github.com/arpruss/brainflex
     private int mode = MODE_NORMAL;
     static final private boolean rawDump = false;
 
 	public BrainFlex() {
 		done = false;
 		t0 = System.currentTimeMillis();
-		signalCount = 0;
-		data = new LinkedList<Data>();
+		packetCount = 0;
+		data = new ArrayList<Data>();
 		marks = new ArrayList<Mark>();
 		lastSignal = 100;
 
@@ -162,21 +161,26 @@ public class BrainFlex extends JFrame {
 			Graphics2D g2 = (Graphics2D) g;
 			Dimension s = getSize();
 			
-			int n = pause < 0 ? data.size() : pause;
+			ArrayList<Data> dataCopy;
+			synchronized (data) {
+				dataCopy = new ArrayList<Data>(data);
+			}
+			
+			int n = pause < 0 ? dataCopy.size() : pause;
 			
 			if (mode == MODE_RAW) {
-				drawRaw(g2, s, n);
+				drawRaw(g2, s, dataCopy, n);
 			}
 			else {
-				drawPower(g2, s, n);
+				drawPower(g2, s, dataCopy, n);
 			}
 			
-			long t = n > 0 ? data.get(n-1).t : 0;
-			long c = n > 0 ? data.get(n-1).count : 0;
+			long t = n > 0 ? dataCopy.get(n-1).t : 0;
+			long c = n > 0 ? dataCopy.get(n-1).count : 0;
 			setTime(t,c);
 		}
 		
-		private void drawRaw(Graphics2D g2, Dimension s, int n) {
+		private void drawRaw(Graphics2D g2, Dimension s, List<Data> data, int n) {
 			if (n<2)
 				return;
 			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).count + 16)));
@@ -217,7 +221,7 @@ public class BrainFlex extends JFrame {
 			}
 		}
 
-		private void drawPower(Graphics2D g2, Dimension s, int n) {
+		private void drawPower(Graphics2D g2, Dimension s, List<Data> data, int n) {
 			if (n<2)
 				return;
 			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).t + 1000 )));
@@ -366,13 +370,11 @@ public class BrainFlex extends JFrame {
 		//		sleep(100);
 		System.out.println("CONNECTED");
 		
-		final byte[] empty = new byte[0];
-
 		while (!done) {
 			byte[] data = dataLink.receiveBytes();
 			if (data != null) {
 				buffer = concat(buffer, data);
-				int skipTo = 0;
+
 				for (int i = 0; i < buffer.length; i++) {
 					if (buffer[i] == (byte)0xAA) {
 						int length = detectPacket0(buffer, i);
@@ -381,25 +383,11 @@ public class BrainFlex extends JFrame {
 							byte[] newBuffer = new byte[buffer.length - i];
 							System.arraycopy(buffer, i, newBuffer, 0, buffer.length - i);
 							buffer = newBuffer;
-							skipTo = 0;
-							break;
 						}
 						else if (length > 0) {
 							parsePacket(buffer, i, length);
 							i += length - 1;
 						}
-					}
-					skipTo = i + 1;
-				}
-
-				if (skipTo > 0) {
-					if (buffer.length == skipTo) {
-						buffer = empty;
-					}
-					else {
-						byte[] newBuffer = new byte[buffer.length - skipTo];
-						System.arraycopy(buffer, skipTo, newBuffer, 0, buffer.length - skipTo);
-						buffer = newBuffer;
 					}
 				}
 			}
@@ -422,7 +410,9 @@ public class BrainFlex extends JFrame {
 		while((pos = parseRow(buffer, pos, end)) < end);
 
 		if (curData.haveRaw || ( lastSignal == 0 && ( curData.havePower || curData.haveAttention || curData.haveMeditation ) ) ) {
-			data.add(curData);
+			synchronized(data) {
+				data.add(curData);
+			}
 			if (System.currentTimeMillis() - lastPaintTime > 250) {
 				lastPaintTime = System.currentTimeMillis();
 				if (pause < 0) {
@@ -441,18 +431,18 @@ public class BrainFlex extends JFrame {
 	}	
 
 	private int parseRow(byte[] buffer, int pos, int end) {
-		int excodeLevel = 0;
-		while (pos < end && buffer[pos] == (byte)0x55) {
-			excodeLevel++;
-			pos++;
-		}
+//		int excodeLevel = 0;
+//		while (pos < end && buffer[pos] == (byte)0x55) {
+//			excodeLevel++;
+//			pos++;
+//		}
 		if (pos >= end)
 			return end;
 		byte code = buffer[pos];
 		pos++;
 		if (pos >= end)
 			return end;
-		int dataLength = 1;
+		int dataLength;
 		if ((code&(byte)0x80) == (byte)0x00) {
 			dataLength = 1;
 		}
@@ -462,17 +452,13 @@ public class BrainFlex extends JFrame {
 		}
 		if (pos + dataLength > end)
 			return end;
-		parseData(excodeLevel, code, buffer, pos, dataLength);
-		return pos + dataLength;
-	}
 
-	private void parseData(int excodeLevel, byte code, byte[] buffer, int pos, int dataLength) {
+//		if (excodeLevel > 0) {
+//			rtLog("UNPARSED "+excodeLevel+" "+code);
+//			return pos + dataLength;
+//		}
+
 		int v;
-
-		if (excodeLevel > 0) {
-			rtLog("UNPARSED "+excodeLevel+" "+code);
-			return;
-		}
 
 		switch(code) {
 		case (byte)0x02:
@@ -518,9 +504,11 @@ public class BrainFlex extends JFrame {
 			rtLog("RRINTERVAL "+(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1]))) );
 		break;
 		default:
-			rtLog("UNPARSED "+excodeLevel+" "+code);
+			rtLog("UNPARSED "/* +excodeLevel+*/+" "+code);
 			break;
 		}
+		
+		return pos+dataLength;
 	}
 
 	private long getUnsigned32(byte[] buffer, int pos) {
@@ -569,9 +557,8 @@ public class BrainFlex extends JFrame {
 		byte sum = 0;
 		for (int j=0; j<pLength; j++)
 			sum += buffer[i+3+j];
-		sum ^= (byte)0xFF;
-		signalCount++;
-		if (sum != buffer[i+3+pLength]) {
+		packetCount++;
+		if ((sum ^ buffer[i+3+pLength]) != (byte)0xFF) {
 			rtLog("CSUMERROR "+sum+" vs "+buffer[i+3+pLength]);
 			return PACKET_NO;
 		}
@@ -615,7 +602,7 @@ public class BrainFlex extends JFrame {
 
 		public Data(long t) {
 			this.t = t;
-			this.count = BrainFlex.this.signalCount - 1;
+			this.count = BrainFlex.this.packetCount - 1;
 		}
 	}
 	
@@ -625,7 +612,7 @@ public class BrainFlex extends JFrame {
 		
 		public Mark() {
 			this.t = System.currentTimeMillis()-t0;
-			this.count = signalCount;
+			this.count = packetCount;
 		}
 	}
 }
