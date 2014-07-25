@@ -17,6 +17,8 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.geom.Line2D;
 import java.awt.geom.Line2D.Double;
 import java.io.BufferedReader;
@@ -55,7 +57,7 @@ public class BrainFlex extends JFrame {
 	private long packetCount;
 	private long lastPaintTime;
 	public static final int MODE_NORMAL = 0;
-	public static final int MODE_RAW = 0x02;
+	public static final int MODE_RAW = 0x02; // 0x02;
     public boolean done;
     private int pause = -1;
 	private JTextField timeText;
@@ -64,6 +66,7 @@ public class BrainFlex extends JFrame {
 
     private boolean customBrainlinkFW = true; // use only with the custom firmware from https://github.com/arpruss/brainflex
     private int mode = MODE_RAW;
+	private DataLink dataLink;
     static final private boolean rawDump = false;
 
 	public BrainFlex() {
@@ -92,6 +95,42 @@ public class BrainFlex extends JFrame {
 //		add(new MyPanel());
 
 		setSize(640,480);
+		
+		addWindowListener(new WindowListener() {
+			
+			@Override
+			public void windowOpened(WindowEvent e) {
+			}
+			
+			@Override
+			public void windowIconified(WindowEvent e) {
+			}
+			
+			@Override
+			public void windowDeiconified(WindowEvent e) {
+			}
+			
+			@Override
+			public void windowDeactivated(WindowEvent e) {
+			}
+			
+			@Override
+			public void windowClosing(WindowEvent e) {
+				if (dataLink != null) {
+					System.out.println("Closing");
+					dataLink.stop();
+				}
+			}
+			
+			@Override
+			public void windowClosed(WindowEvent e) {
+			}
+			
+			@Override
+			public void windowActivated(WindowEvent e) {
+			}
+		});
+		
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 
 		MyPanel graph = new MyPanel();
@@ -196,7 +235,7 @@ public class BrainFlex extends JFrame {
 				if (d.raw > ySize)
 					ySize = d.raw;
 				else if (-d.raw > ySize)
-					ySize = d.raw;
+					ySize = -d.raw;
 			}
 			
 			ySize *= 2;
@@ -317,7 +356,8 @@ public class BrainFlex extends JFrame {
 			long t0 = System.currentTimeMillis();
 			while(System.currentTimeMillis() < t0 + 20000) {
 				byte[] data = dataLink.receiveBytes();
-				o.write(data);
+				if (data != null)
+					o.write(data);
 			}
 			dataLink.stop();
 			o.close();
@@ -353,8 +393,6 @@ public class BrainFlex extends JFrame {
 	void readData(String comPort) throws IOException {
 		byte[] buffer = new byte[0];
 
-		DataLink dataLink;
-
 		System.out.println("CONNECTING");
 		dataLink = customBrainlinkFW ? new BrainLinkBridgeSerialLink(comPort) : new BrainLinkSerialLinkLL(comPort); 
 		int baud = 9600;
@@ -375,31 +413,38 @@ public class BrainFlex extends JFrame {
 		//		sleep(100);
 		System.out.println("CONNECTED");
 		
-		while (!done) {
-			byte[] data = dataLink.receiveBytes();
-			if (data != null) {
-				buffer = concat(buffer, data);
-
-				for (int i = 0; i < buffer.length; i++) {
-					if (buffer[i] == (byte)0xAA) {
-						int length = detectPacket0(buffer, i);
-						if (length == PACKET_MAYBE) {
-							// possible start of unfinished packet
-							byte[] newBuffer = new byte[buffer.length - i];
-							System.arraycopy(buffer, i, newBuffer, 0, buffer.length - i);
-							buffer = newBuffer;
-						}
-						else if (length > 0) {
-							parsePacket(buffer, i, length);
-							i += length - 1;
+		while (!done && dataLink != null) {
+			try {
+				byte[] data = dataLink.receiveBytes();
+				if (data != null) {
+					buffer = concat(buffer, data);
+	
+					for (int i = 0; i < buffer.length; i++) {
+						if (buffer[i] == (byte)0xAA) {
+							int length = detectPacket0(buffer, i);
+							if (length == PACKET_MAYBE) {
+								// possible start of unfinished packet
+								byte[] newBuffer = new byte[buffer.length - i];
+								System.arraycopy(buffer, i, newBuffer, 0, buffer.length - i);
+								buffer = newBuffer;
+							}
+							else if (length > 0) {
+								parsePacket(buffer, i, length);
+								i += length - 1;
+							}
 						}
 					}
 				}
 			}
+			catch(Exception e) {				
+			}
 		} 
 
 		System.out.println("Terminated");
-		dataLink.stop();
+		if (dataLink != null) {
+			dataLink.stop();
+			dataLink = null;
+		}
 		dispose();
 	}
 
@@ -494,13 +539,15 @@ public class BrainFlex extends JFrame {
 		case (byte)0x80:
 			curData.raw = (short)(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1])));
 			curData.haveRaw = true;
-			rtLog("RAW " + curData.raw);
+//			rtLog("RAW " + curData.raw);
 		break;
 		case (byte)0x81:
 			rtLog("EEG_POWER unsupported");
 		break;
 		case (byte)0x82:
-			rtLog("0x82 "+getUnsigned32(buffer,pos));
+//			rtLog("0x82 "+getUnsigned32(buffer,pos));
+			curData.raw = (short)(((0xFF&(int)buffer[pos+2])<<8) | ((0xFF&(int)buffer[pos+3])));
+			curData.haveRaw = true;
 		break;
 		case (byte)0x83:
 			parseASIC_EEG_POWER(buffer, pos);
