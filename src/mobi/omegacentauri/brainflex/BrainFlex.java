@@ -60,8 +60,8 @@ public class BrainFlex extends JFrame {
     private int pause = -1;
 	private JTextField timeText;
 
-    private boolean customBrainlinkFW = true; // use only with the custom firmware from https://github.com/arpruss/brainflex
-    private int mode = MODE_RAW;
+    private boolean customBrainlinkFW = false; // use only with the custom firmware from https://github.com/arpruss/brainflex
+    private int mode = MODE_NORMAL;
     static final private boolean rawDump = false;
 
 	public BrainFlex() {
