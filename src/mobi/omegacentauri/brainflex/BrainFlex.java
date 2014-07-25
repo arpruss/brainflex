@@ -20,6 +20,7 @@ import java.awt.event.ActionListener;
 import java.awt.geom.Line2D;
 import java.awt.geom.Line2D.Double;
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
@@ -28,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -54,16 +56,19 @@ public class BrainFlex extends JFrame {
 	private long lastPaintTime;
 	public static final int MODE_NORMAL = 0;
 	public static final int MODE_RAW = 0x02;
-    private int mode = MODE_NORMAL;
+    private boolean customBrainlinkFW = true;
     public boolean done;
     private int pause = -1;
 	private JTextField timeText;
+
+    private int mode = MODE_NORMAL;
+    static final private boolean rawDump = false;
 
 	public BrainFlex() {
 		done = false;
 		t0 = System.currentTimeMillis();
 		signalCount = 0;
-		data = new ArrayList<Data>();
+		data = new LinkedList<Data>();
 		marks = new ArrayList<Mark>();
 		lastSignal = 100;
 
@@ -288,34 +293,70 @@ public class BrainFlex extends JFrame {
 
 	public static void main(final String[] args) throws Exception
 	{
-		BrainFlex bf = new BrainFlex();
-		bf.readData();
+		final String comPort = JOptionPane.showInputDialog(null, "Brainlink serial port?");
+		if (comPort == null)
+			return;
+
+		if (rawDump) {
+			DataLink dataLink;
+			FileOutputStream o = new FileOutputStream("data.raw");
+
+			dataLink = new BrainLinkBridgeSerialLink(comPort); 
+			dataLink.preStart(9600, new byte[] { MODE_RAW });
+			dataLink.start(57600);
+
+			long t0 = System.currentTimeMillis();
+			while(System.currentTimeMillis() < t0 + 20000) {
+				byte[] data = dataLink.receiveBytes();
+				o.write(data);
+			}
+			dataLink.stop();
+			o.close();
+			System.out.println("Done");
+		}
+		else {
+			final BrainFlex bf = new BrainFlex();
+			
+			Thread reader = new Thread() {
+				@Override 
+				public void run() {
+					try {
+						bf.readData(comPort);
+					} catch (IOException e) {
+					}
+				}			
+			};
+			
+			try {
+				reader.setPriority(Thread.MAX_PRIORITY);
+			}
+			catch(Exception e) {
+				System.err.println("Cannot set max priority for reader thread.");
+			}
+			reader.start();
+		}
 	}
 
 	public double log2(double d) {
 		return Math.log(d)/Math.log(2);
 	}
 
-	void readData() throws IOException {
-		String comPort;
-
-		comPort = JOptionPane.showInputDialog(null, "Brainlink serial port?");
-
+	void readData(String comPort) throws IOException {
 		byte[] buffer = new byte[0];
 
-		BrainLinkSerialLinkLL dataLink;
+		DataLink dataLink;
 
 		System.out.println("CONNECTING");
-		dataLink = new BrainLinkSerialLinkLL(comPort); 
-		dataLink.start(9600);
+		dataLink = customBrainlinkFW ? new BrainLinkBridgeSerialLink(comPort) : new BrainLinkSerialLinkLL(comPort); 
+		int baud = 9600;
 		if (mode != MODE_NORMAL) {
-		    dataLink.transmit(mode); 
-		    if (mode >= 0x02)
-		       dataLink.start(57600);
-                    else if (mode == 0x01)
-                       dataLink.start(1200);
+			dataLink.preStart(9600, new byte[] { (byte)mode });
+			if (mode >= 0x02)
+				baud = 57600;
+			else if (mode == 0x01)
+				baud = 1200;
 		}
-		//dataLink.start(57600);
+		dataLink.start(baud);
 		// 0x00 : 9600 : normal
 		// 0x01 : 1200
 		// 0x02 : 57600 : RAW
@@ -374,7 +415,7 @@ public class BrainFlex extends JFrame {
 
 		if (curData.haveRaw || ( lastSignal == 0 && ( curData.havePower || curData.haveAttention || curData.haveMeditation ) ) ) {
 			data.add(curData);
-			if (System.currentTimeMillis() - lastPaintTime > 60) {
+			if (System.currentTimeMillis() - lastPaintTime > 250) {
 				lastPaintTime = System.currentTimeMillis();
 				if (pause < 0) {
 					repaint();
@@ -485,7 +526,7 @@ public class BrainFlex extends JFrame {
 		double sum = 0;
 		for (int i=0; i<POWER_NAMES.length; i++) {
 			int v = getUnsigned24(buffer, pos + 3 * i);
-			rtLog(POWER_NAMES[i]+" "+v);
+			System.out.println(POWER_NAMES[i]+" "+v);
 			curData.power[i] = v;
 			sum += v;
 		}

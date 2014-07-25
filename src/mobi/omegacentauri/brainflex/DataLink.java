@@ -21,4 +21,10 @@ public abstract class DataLink {
 	 }
 
 	public abstract void clearBuffer();
+	
+	public abstract void start(int baud);
+	
+	public abstract void stop();
+
+	public abstract void preStart(int baud, byte[] data);
 }

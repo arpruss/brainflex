@@ -15,7 +15,7 @@ import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortTimeoutException;
 
-public class BrainLinkSerialLinkLL extends DataLink {
+public class BrainLinkBridgeSerialLink extends DataLink {
   // Use information from: http://www.brainlinksystem.com/brainlink-hardware-description
   // and calculator from: http://www.avrcalc.elektronik-projekt.de/xmega/baud_rate_calculator
   // with 32MHz clock rate.
@@ -29,7 +29,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	private SerialPort p;
 	private int baud;
 
-	public BrainLinkSerialLinkLL(String port) {
+	public BrainLinkBridgeSerialLink(String port) {
 //		CommPortIdentifier id;
 		try {
 			System.out.println("Opening "+port);
@@ -37,13 +37,20 @@ public class BrainLinkSerialLinkLL extends DataLink {
 			if (! p.openPort())
 				throw(new IOException("Cannot open "+p.getPortName()));
 			System.out.println("Opened port "+p.getPortName());
-			p.writeByte((byte)'*');
 		} catch (Exception e) {
 			System.err.println("Ooops "+e);
 			System.exit(1);
 		}
 	}
-	
+
+	public void start(int baud) {
+		setBaud(baud);
+		try {
+			p.writeByte((byte)'Z');
+		} catch (SerialPortException e) {
+		}
+	}
+
 	private void setBaud(int baud) {
 		this.baud = baud;
 		try {
@@ -62,19 +69,12 @@ public class BrainLinkSerialLinkLL extends DataLink {
 			else {
 				System.err.println("Unrecognized baud "+baud);
 			}
-		} catch (SerialPortException e) {
 		}
-	}
-
-	public void start(int baud) {
-		setBaud(baud);
+		catch(SerialPortException e) {
+		}
 	}
 
 	public void stop() {
-		try {
-			p.writeByte((byte)'Q');
-		} catch (SerialPortException e) {			
-		}
 		try {
 			p.closePort();
 		} catch (SerialPortException e) {
@@ -83,76 +83,37 @@ public class BrainLinkSerialLinkLL extends DataLink {
 
 	@Override
 	public byte[] receiveBytes() {
-		byte[] buff = new byte[0];
-
 		try {
-			p.writeBytes(new byte[] { '*','r' } );
-			if (!readUntil((byte)'*',100) || !readUntil((byte)'r',600))
-				return buff;
-			byte[] oneByte = p.readBytes(1, scaleTimeout(50));
-			if (oneByte.length != 1)
-				return buff;
-			int length = (0xFF&(int)(oneByte[0]));
-			length = (length-1)&0xFF;
-			if (length == 0)
-				return buff;
-			//System.out.println("data "+length);
-			byte[] out = p.readBytes(length, scaleTimeout(5*length)); 
-			if (out.length == length) {
-				buff = out;
-				//BrainFlex.dumpData(out);
-			}
+			return p.readBytes(128, scaleTimeout(128));
 		} catch (SerialPortException e) {
 		} catch (SerialPortTimeoutException e) {
 		}
 
-		return buff;
+		return new byte[0];
 	}
 
-	// Timeouts designed for 9600 baud
-	private boolean readUntil(byte b, int timeout) {
-		long t1 = getTimeoutTime(timeout);
-		do {
-			try {
-				byte[] oneByte = p.readBytes(1, (int)(1+t1-System.currentTimeMillis()));
-				if (oneByte[0] == b)
-					return true;
-			} catch (SerialPortException e) {
-				return false;
-			} catch (SerialPortTimeoutException e) {
-			}
-		} while(System.currentTimeMillis() <= t1);
-		return false;
-	}
-	
 	private int scaleTimeout(int timeout) {
 		return timeout * 9600 / baud;
 	}
 	
-	private long getTimeoutTime(int timeout) {
-		timeout = timeout * 9600 / baud;
-		if (timeout>0)
-			timeout=2;
-		return System.currentTimeMillis() + timeout;
-	}
-
 	@Override
 	public void transmit(byte... data) {
 		try {
-			p.writeBytes(new byte[] { (byte)'*', (byte)'t', (byte)data.length });
 			p.writeBytes(data);
 		} catch (SerialPortException e) {
 		}
 	}
-	
-	@Override
-	public void preStart(int baud, byte[] data) {
-		setBaud(baud);
-		transmit(data);
-	}
 
 	@Override
 	public void clearBuffer() {
-		receiveBytes();
+	}
+
+	public void preStart(int preBaud, byte[] data) {
+		setBaud(preBaud);
+		try {
+			p.writeBytes(new byte[] { '*', 't', (byte)data.length } );
+			p.writeBytes(data);
+		} catch (SerialPortException e) {			
+		}		
 	}
 }
