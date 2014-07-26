@@ -29,4 +29,6 @@ public abstract class DataLink {
 
 	// quick pre-initialization, possibly at a different baud rate from the main one
 	public abstract void preStart(int baud, byte[] data);
+
+	public abstract boolean valid();
 }

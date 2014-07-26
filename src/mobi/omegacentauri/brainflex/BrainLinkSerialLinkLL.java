@@ -28,9 +28,11 @@ public class BrainLinkSerialLinkLL extends DataLink {
 
 	private SerialPort p;
 	private int baud;
+	private boolean valid;
 
 	public BrainLinkSerialLinkLL(String port) {
 //		CommPortIdentifier id;
+		valid = false;
 		try {
 			System.out.println("Opening "+port);
 			p = new SerialPort(port);
@@ -38,6 +40,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 				throw(new IOException("Cannot open "+p.getPortName()));
 			System.out.println("Opened port "+p.getPortName());
 			p.writeByte((byte)'*');
+			valid = true;
 		} catch (Exception e) {
 			System.err.println("Ooops "+e);
 			System.exit(1);
@@ -150,5 +153,9 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	@Override
 	public void clearBuffer() {
 		receiveBytes();
+	}
+	
+	public boolean valid() {
+		return valid;
 	}
 }
