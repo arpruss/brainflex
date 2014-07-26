@@ -118,7 +118,7 @@ public class MindFlexReader {
 			
 			if (System.currentTimeMillis() - lastPaintTime > 250) {
 				lastPaintTime = System.currentTimeMillis();
-				gui.update();
+				gui.updateGraphs();
 			}
 		}
 	}

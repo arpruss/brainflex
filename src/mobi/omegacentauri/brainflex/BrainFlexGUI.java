@@ -3,15 +3,12 @@ package mobi.omegacentauri.brainflex;
 import java.util.List;
 
 public interface BrainFlexGUI {
-	void update();
+	void updateGraphs();
 	void terminate();
 	int getMode();
-	Pause getPause();
 	List<MindFlexReader.Data> getDataCopy();
 	List<Mark> getMarksCopy();
-	double getScale();
 	MindFlexReader getMindFlexReader();
-	void setTime(int t, int packetCount, int goodPacketCount);
 	
 	public class Mark {
 		int t;
@@ -23,9 +20,4 @@ public interface BrainFlexGUI {
 		}
 	}
 	
-	public class Pause {
-	    int point = -1;
-		int pausedBadPacketCount;
-		int pausedPacketCount;
-	}
 }

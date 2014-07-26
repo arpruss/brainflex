@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -28,16 +29,11 @@ import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JTextField;
 
-public class BrainFlex extends JFrame implements BrainFlexGUI {
-	private static final long serialVersionUID = 211404378675000337L;
+import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
+
+public class BrainFlex implements BrainFlexGUI {
 	private List<Mark> marks;
-	private JTextField timeText;
-	private JScrollBar scrollBar;
-	Pause pause;
-	static final double MIN_SCALE = 1/16.;
-	static final double MAX_SCALE = 4.;
-	static final double SCALE_MULT = 1.5;
-	double scale;
+	private List<ViewerWindow> windows;
 	MindFlexReader mfr;
     static final private boolean rawDump = false;
 	private boolean customBrainlinkFW = true; // use only with the custom firmware from https://github.com/arpruss/brainflex
@@ -47,146 +43,21 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 		DataLink dataLink = customBrainlinkFW ? new BrainLinkBridgeSerialLink(comPort) : new BrainLinkSerialLinkLL(comPort); 
 		if (! dataLink.valid()) {
 			mfr = null;
-			dispose();
 			return;
 		}
 
 		mfr = new MindFlexReader(this, dataLink, mode);
 		marks = new ArrayList<Mark>();
-		pause = new Pause();
-		scale = 1.;
 		
-		setSize(640,480);
+		windows = new LinkedList<ViewerWindow>();
 		
-		addWindowListener(new WindowListener() {
-			
-			@Override
-			public void windowOpened(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowIconified(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowDeiconified(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowDeactivated(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowClosing(WindowEvent e) {
-				if (mfr != null)
-					mfr.disconnect();
-			}
-			
-			@Override
-			public void windowClosed(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowActivated(WindowEvent e) {
-			}
-		});
-		
-		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
-
-		scrollBar = new JScrollBar(JScrollBar.HORIZONTAL);		
-
-		final GraphPanel graph = mode < MindFlexReader.MODE_RAW ? new PowerGraphPanel(scrollBar, this) : new RawGraphPanel(scrollBar, this);	
-		getContentPane().add(graph);
-		
-		getContentPane().add(scrollBar);
-		scrollBar.setVisible(false);
-		scrollBar.addAdjustmentListener(new AdjustmentListener() {
-			
-			@Override
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				graph.repaint();
-			}
-		});
-
-		JPanel buttonPanel = new JPanel();
-		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
-		
-		JButton plusButton = new JButton(" + ");
-		plusButton.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				if (scale / SCALE_MULT >= MIN_SCALE) {
-					scale /= SCALE_MULT;
-					graph.repaint();
-				}
-			}
-		});
-		
-		JButton minusButton = new JButton(" - ");
-		minusButton.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				if (scale * SCALE_MULT <= MAX_SCALE) {
-					scale *= SCALE_MULT;
-					graph.repaint();
-				}
-			}
-		});
-		
-
-		JButton markButton = new JButton("Mark");
-		markButton.addActionListener(new ActionListener() {		
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Mark mark = new Mark((int)(System.currentTimeMillis()-mfr.t0), mfr.packetCount);
-				System.out.println("Mark "+mark.t+ " "+mark.rawCount);
-				synchronized(marks) {
-					marks.add(mark);
-				}
-			}
-		}); 	
-		JButton exitButton = new JButton("Exit");
-		exitButton.addActionListener(new ActionListener() {		
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				mfr.stop();
-			}
-		}); 	
-		JButton pauseButton = new JButton("Pause");
-		pauseButton.addActionListener(new ActionListener() {		
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (pause.point < 0) {
-					pause.point = mfr.data.size();
-					pause.pausedBadPacketCount = mfr.badPacketCount;
-					pause.pausedPacketCount = mfr.packetCount;
-				}
-				else {
-					pause.point = -1;
-				}
-				repaint();
-			}
-		}); 	
-		timeText = new JTextField();
-		setTime(0, 0, 0);
-		timeText.setEditable(false);
-		Dimension m = timeText.getMaximumSize();
-		Dimension p = timeText.getPreferredSize();
-		m.height = p.height;
-		timeText.setMaximumSize(m);
-
-		buttonPanel.add(plusButton);
-		buttonPanel.add(minusButton);
-		buttonPanel.add(pauseButton);
-		buttonPanel.add(markButton);
-		buttonPanel.add(exitButton);
-		buttonPanel.add(timeText);
-		
-		getContentPane().add(buttonPanel);
-		
-		setVisible(true);
+		if (mode == MindFlexReader.MODE_RAW) {
+			windows.add(new ViewerWindow(this, false));
+			windows.add(new ViewerWindow(this, true));
+		}
+		else {
+			windows.add(new ViewerWindow(this, false));
+		}
 				
 		Thread reader = new Thread() {
 			@Override 
@@ -207,17 +78,8 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 		reader.start();
 	}
 	
-	@Override
-	public void setTime(int t, int c, int bad) {
-		timeText.setText(new DecimalFormat("0.000").format(t/1000.)+"s ("+c+" good packets, "+bad+" bad packets)");
-	}
-	
 	public int getMode() {
 		return mode;
-	}
-	
-	public Pause getPause() {
-		return pause;
 	}
 	
 	public List<MindFlexReader.Data> getDataCopy() {
@@ -261,21 +123,35 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 		}
 	}
 
-	public void update() {
-		if (pause.point < 0)
-			repaint();
+	public void updateGraphs() {
+		for (ViewerWindow w: windows) {
+			w.updateGraph();
+		}
 	}
 	
 	public void terminate() {
-		dispose();
+		for (ViewerWindow w: windows)
+			w.dispose();
 	}
 	
-	public double getScale() {
-		return scale;
-	}
-
 	@Override
 	public MindFlexReader getMindFlexReader() {
 		return mfr;
+	}
+
+	public void addMark(Mark mark) {
+		synchronized(marks) {
+			marks.add(mark);
+		}		
+	}
+
+	public void closing(ViewerWindow toClose) {
+		for (ViewerWindow w: windows) {
+			if (w == toClose) {
+				windows.remove(w);
+			}
+		}
+		if (windows.size() == 0)
+			mfr.disconnect();
 	}
 }

@@ -9,8 +9,6 @@ import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 
-import mobi.omegacentauri.brainflex.BrainFlexGUI.Pause;
-
 public abstract class GraphPanel extends JPanel {
 	private static final long serialVersionUID = -7210732205864749654L;
 	double startT;
@@ -22,14 +20,14 @@ public abstract class GraphPanel extends JPanel {
 	private JScrollBar scrollBar;
 	protected BrainFlexGUI gui;
 	private MindFlexReader mfr;
-	private Pause pause;
+	protected ViewerWindow w;
 	
-	public GraphPanel(JScrollBar scrollBar, BrainFlexGUI gui) {
+	public GraphPanel(BrainFlexGUI gui, ViewerWindow w) {
 		super();
+		this.w = w;
 		this.gui = gui;
-		this.scrollBar = scrollBar;
-		this.pause = gui.getPause();
 		this.mfr = gui.getMindFlexReader();
+		this.scrollBar = w.scrollBar;
 	}
 	
 	@Override
@@ -41,16 +39,16 @@ public abstract class GraphPanel extends JPanel {
 		
 		List<MindFlexReader.Data> dataCopy = gui.getDataCopy();
 		
-		int n = pause.point < 0 ? dataCopy.size() : pause.point;
+		int n = w.pause.point < 0 ? dataCopy.size() : w.pause.point;
 		if (n<1)
 			return;
 		int t = n > 0 ? dataCopy.get(n-1).t : 0;
 		
-		if (pause.point < 0) {
-			gui.setTime(t, mfr.packetCount, mfr.badPacketCount);
+		if (w.pause.point < 0) {
+			w.setTime(t, mfr.packetCount, mfr.badPacketCount);
 		}
 		else {
-			gui.setTime(t, pause.pausedPacketCount, pause.pausedBadPacketCount);
+			w.setTime(t, w.pause.pausedPacketCount, w.pause.pausedBadPacketCount);
 		}
 		
 		draw(g2, s, dataCopy, gui.getMarksCopy(), n);

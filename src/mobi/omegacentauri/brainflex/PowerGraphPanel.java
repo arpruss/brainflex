@@ -18,8 +18,8 @@ public class PowerGraphPanel extends GraphPanel {
 	private static final int VISIBLE=512;
 	private static final int SPACING = 3;
 
-	public PowerGraphPanel(JScrollBar scrollBar, BrainFlexGUI gui) {
-		super(scrollBar, gui);
+	public PowerGraphPanel(BrainFlexGUI gui, ViewerWindow w) {
+		super(gui, w);
 	}
 	
 	@Override
@@ -28,7 +28,7 @@ public class PowerGraphPanel extends GraphPanel {
 		if (n<2)
 			return;
 
-		calculateTSize(s, (double)data.get(n-1).t, gui.getScale() * VISIBLE, 1000., 10.);
+		calculateTSize(s, (double)data.get(n-1).t, w.scale * VISIBLE, 1000., 10.);
 
 		double ySize = 0;
 		for (MindFlexReader.Data d: data) 

@@ -18,8 +18,8 @@ public class RawGraphPanel extends GraphPanel {
 	private static final long serialVersionUID = 8739434584974120909L;
 	public static final int VISIBLE = 1500;
 
-	public RawGraphPanel(JScrollBar scrollBar, BrainFlexGUI gui) {
-		super(scrollBar, gui);
+	public RawGraphPanel(BrainFlexGUI gui, ViewerWindow w) {
+		super(gui, w);
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class RawGraphPanel extends GraphPanel {
 		if (n<2)
 			return;
 
-		calculateTSize(s, (double)data.get(n-1).rawCount, gui.getScale() * VISIBLE, 16., 1.);
+		calculateTSize(s, (double)data.get(n-1).rawCount, w.scale * VISIBLE, 16., 1.);
 
 		double ySize = 0;
 		for (MindFlexReader.Data d: data) {
