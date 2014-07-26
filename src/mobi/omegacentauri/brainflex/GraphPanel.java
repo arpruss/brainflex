@@ -70,12 +70,15 @@ public abstract class GraphPanel extends JPanel {
 		
 		if (maxT >= visibleLimit) {
 			tSize = visibleLimit;
+			int sbMax = (int)(scrollBarScale * maxT);
+			int sbVis = (int)(scrollBarScale * visibleLimit);
 
-			if (! scrollBar.isVisible() || scrollBar.getMaximum() != maxT) {
-				scrollBar.setMaximum((int)(scrollBarScale * maxT+0.5));
-				scrollBar.setVisibleAmount((int)(scrollBarScale * visibleLimit+0.5));
+			if (! scrollBar.isVisible() || scrollBar.getMaximum() != sbMax || scrollBar.getVisibleAmount() != sbVis) {
+				scrollBar.setMaximum(sbMax);
+				scrollBar.setVisibleAmount(sbVis);
 				scrollBar.setMinimum(0);
 				scrollBar.setVisible(true);
+				scrollBar.setValue((int)((maxT - visibleLimit) * scrollBarScale ));
 				startT = maxT-visibleLimit;
 			}
 			else {					

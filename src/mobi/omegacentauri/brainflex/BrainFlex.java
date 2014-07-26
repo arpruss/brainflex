@@ -177,6 +177,7 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 		m.height = p.height;
 		timeText.setMaximumSize(m);
 
+		buttonPanel.add(plusButton);
 		buttonPanel.add(minusButton);
 		buttonPanel.add(pauseButton);
 		buttonPanel.add(markButton);
