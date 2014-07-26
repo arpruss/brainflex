@@ -40,7 +40,12 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 	private static final long serialVersionUID = 1L;
 	private JTextField timeText;
 	private JScrollBar scrollBar;
-	static final int MAX_VISIBLE_RAW=1500;
+	static final int VISIBLE_RAW=1500;
+	static final int VISIBLE_POWER=512;
+	static final double MIN_SCALE = 1/16.;
+	static final double MAX_SCALE = 4.;
+	static final double SCALE_MULT = 1.5;
+	double scale;
 	MindFlexReader mfr;
     static final private boolean rawDump = false;
 	private boolean customBrainlinkFW = true; // use only with the custom firmware from https://github.com/arpruss/brainflex
@@ -56,6 +61,7 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 
 		mfr = new MindFlexReader(this, dataLink, mode);
 		marks = new ArrayList<Mark>();
+		scale = 1.;
 		
 		setSize(640,480);
 		
@@ -110,6 +116,31 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
+		
+		JButton plusButton = new JButton(" + ");
+		plusButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if (scale / SCALE_MULT >= MIN_SCALE) {
+					scale /= SCALE_MULT;
+					graph.repaint();
+				}
+			}
+		});
+		
+		JButton minusButton = new JButton(" - ");
+		minusButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if (scale * SCALE_MULT <= MAX_SCALE) {
+					scale *= SCALE_MULT;
+					graph.repaint();
+				}
+			}
+		});
+		
 
 		JButton markButton = new JButton("Mark");
 		markButton.addActionListener(new ActionListener() {		
@@ -150,6 +181,7 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 		m.height = p.height;
 		timeText.setMaximumSize(m);
 
+		buttonPanel.add(minusButton);
 		buttonPanel.add(pauseButton);
 		buttonPanel.add(markButton);
 		buttonPanel.add(exitButton);
@@ -184,13 +216,58 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 
 	private class MyPanel extends JPanel {
 		private static final long serialVersionUID = -1055183524854368685L;
-		private static final int GRAPH_SPACING = 3;
+		private static final int POWER_SPACING = 3;
+		double startT;
+		double endT;
+		double maxT;
+		double tScale;
+		double yScale;
+		double subgraphHeight;
 		
 		public MyPanel() {
 			super();
 		}
+		
+		double scaleT(double t) {
+			return (t - startT) * tScale;
+		}
+		
+		void calculateTSize( Dimension s, double currentSize, double visibleLimit, double minVisible, double scrollBarScale ) {
+			maxT = currentSize;
+		
+			double tSize;
+			
+			if (maxT >= visibleLimit) {
+				tSize = visibleLimit;
 
-		@Override
+				if (! scrollBar.isVisible() || scrollBar.getMaximum() != maxT) {
+					scrollBar.setMaximum((int)(scrollBarScale * maxT+0.5));
+					scrollBar.setVisibleAmount((int)(scrollBarScale * visibleLimit+0.5));
+					scrollBar.setMinimum(0);
+					scrollBar.setVisible(true);
+					startT = maxT-visibleLimit;
+				}
+				else {					
+					startT = scrollBar.getValue() / scrollBarScale;
+				}
+			}
+			else {
+				scrollBar.setVisible(false);
+				startT = 0;
+				tSize = Math.pow(2, Math.ceil(log2(Math.max(maxT - startT, 16.))));
+			}
+			endT = startT + tSize;
+			tScale = s.getWidth() / tSize;
+		}
+		
+		void scaledLine(Graphics2D g2, double t1, double y1, double t2, double y2, int subgraph) {
+			g2.draw(new Line2D.Double(scaleT(t1), 
+					y1 * yScale + subgraphHeight * subgraph,
+					scaleT(t2), 
+					y2 * yScale + subgraphHeight * subgraph));
+		}
+
+//		@Override
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
 
@@ -225,28 +302,7 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 			if (n<2)
 				return;
 
-			int maxT = data.get(n-1).rawCount;
-			int startT;
-			double tSize;
-
-			if (maxT > MAX_VISIBLE_RAW) {
-				tSize = MAX_VISIBLE_RAW;
-
-				if (! scrollBar.isVisible() || scrollBar.getMaximum() != maxT) {
-					scrollBar.setMaximum(maxT);
-					scrollBar.setVisibleAmount(MAX_VISIBLE_RAW);
-					scrollBar.setMinimum(0);
-					scrollBar.setVisible(true);
-				}
-				
-				startT = scrollBar.getValue();
-			}
-			else {
-				scrollBar.setVisible(false);
-				startT = 0;
-				tSize = Math.pow(2, Math.ceil(log2(maxT - startT + 16)));
-			}
-			double tScale = s.getWidth() / tSize;
+			calculateTSize(s, (double)data.get(n-1).rawCount, scale * VISIBLE_RAW, 16., 1.);
 
 			double ySize = 0;
 			for (MindFlexReader.Data d: data) {
@@ -258,12 +314,16 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 			
 			ySize *= 2;
 			
-			double yScale = s.getHeight() / ySize;
+			if (ySize < 0)
+				ySize = 1;
+			
+			yScale = s.getHeight() / ySize;
+			subgraphHeight = 0;
 			
 			g2.setColor(Color.BLUE);
 			for (Mark m: marks) {
-				Line2D lin = new Line2D.Double((m.rawCount - startT) * tScale, 0,
-						m.rawCount * tScale, s.getHeight());
+				Line2D lin = new Line2D.Double(scaleT(m.rawCount), 0,
+						scaleT(m.rawCount), s.getHeight());
 				g2.draw(lin);
 			}
 
@@ -272,12 +332,11 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 
 			for (int i=0; i<n; i++) {
 				MindFlexReader.Data d1 = data.get(i);
-				if (0<i && d0.rawCount >= startT && d0.haveRaw && d1.haveRaw) { 
-					Line2D lin = new Line2D.Double((d0.rawCount - startT) * tScale, 
-							(ySize / 2 - d0.raw) * yScale,
-							(d1.rawCount - startT) * tScale, 
-							(ySize / 2 - d1.raw) * yScale);
-					g2.draw(lin);					
+				if (0<i && d0.haveRaw && d1.haveRaw &&
+						d0.rawCount >= startT && d1.rawCount <= endT
+						) { 
+					
+					scaledLine(g2, d0.rawCount, ySize / 2 - d0.raw, d1.rawCount, ySize / 2 - d1.raw, 0);
 				}
 				d0 = d1;
 			}
@@ -286,29 +345,30 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 		private void drawPower(Graphics2D g2, Dimension s, List<MindFlexReader.Data> data, int n) {
 			if (n<2)
 				return;
-			double tSize = Math.pow(2, Math.ceil(log2(data.get(n-1).t + 1000 )));
-			double tScale = s.getWidth() / tSize;
+
+			calculateTSize(s, (double)data.get(n-1).t, scale * VISIBLE_POWER, 1000., 10.);
+
 			double ySize = 0;
 			for (MindFlexReader.Data d: data) 
 				for (double y: d.power)
 					if (y > ySize)
 						ySize = y;
 
-			double subgraphContentHeight = (s.getHeight() - GRAPH_SPACING * (1+MindFlexReader.POWER_NAMES.length) ) / (2+MindFlexReader.POWER_NAMES.length);
-			double subgraphHeight = subgraphContentHeight + GRAPH_SPACING;
-			double yScale = subgraphContentHeight / ySize;
+			double subgraphContentHeight = (s.getHeight() - POWER_SPACING * (1+MindFlexReader.POWER_NAMES.length) ) / (2+MindFlexReader.POWER_NAMES.length);
+			subgraphHeight = subgraphContentHeight + POWER_SPACING;
+			yScale = subgraphContentHeight / ySize;
 
 			g2.setColor(Color.BLUE);
 			for (Mark m: marks) {
-				Line2D lin = new Line2D.Double(m.t * tScale, 0,
-						m.t * tScale, s.getHeight());
+				Line2D lin = new Line2D.Double(scaleT(m.t), 0,
+						scaleT(m.t), s.getHeight());
 				g2.draw(lin);
 			}
 
 			g2.setColor(Color.GREEN);
 			for (int j = 0 ; j < MindFlexReader.POWER_NAMES.length + 1 ; j++) {
-				Line2D lin = new Line2D.Double(0, subgraphHeight * ( j + 1 ) + GRAPH_SPACING / 2,
-						s.getWidth(), subgraphHeight * ( j + 1 ) + GRAPH_SPACING / 2);
+				Line2D lin = new Line2D.Double(0, subgraphHeight * ( j + 1 ) + POWER_SPACING / 2,
+						s.getWidth(), subgraphHeight * ( j + 1 ) + POWER_SPACING / 2);
 				g2.draw(lin);
 			}
 			
@@ -326,29 +386,19 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 
 			for (int i=0; i<n; i++) {
 				MindFlexReader.Data d1 = data.get(i);
-				if (0<i) { 
+				if (0<i && startT <= d0.t && d1.t <= endT) { 
 					if (d0.havePower && d1.havePower) { 
 						for (int j=0; j<MindFlexReader.POWER_NAMES.length; j++) {
-							Line2D lin = new Line2D.Double(d0.t * tScale, 
-									(ySize - d0.power[j]) * yScale + j * subgraphHeight,
-									d1.t * tScale, 
-									(ySize - d1.power[j]) * yScale + j * subgraphHeight);
-							g2.draw(lin);
+							scaledLine(g2, d0.t, ySize - d0.power[j], d1.t, ySize - d1.power[j], j);
 						}
 					}
 					if (d0.haveAttention && d1.haveAttention) {
-						Line2D lin = new Line2D.Double(d0.t * tScale, 
-								(1 - d0.attention) * subgraphContentHeight + MindFlexReader.POWER_NAMES.length * subgraphHeight,
-								d1.t * tScale, 
-								(1 - d1.attention) * subgraphContentHeight + MindFlexReader.POWER_NAMES.length * subgraphHeight);
-						g2.draw(lin);
+						scaledLine(g2, d0.t, (1 - d0.attention)*ySize, d1.t, (1-d0.attention)*ySize, 
+									MindFlexReader.POWER_NAMES.length);
 					}
 					if (d0.haveMeditation && d1.haveMeditation) {
-						Line2D lin = new Line2D.Double(d0.t * tScale, 
-								(1 - d0.meditation) * subgraphContentHeight + (1+MindFlexReader.POWER_NAMES.length) * subgraphHeight,
-								d1.t * tScale, 
-								(1 - d1.meditation) * subgraphContentHeight + (1+MindFlexReader.POWER_NAMES.length) * subgraphHeight);
-						g2.draw(lin);
+						scaledLine(g2, d0.t, (1 - d0.meditation)*ySize, d1.t, (1-d0.meditation)*ySize, 
+								MindFlexReader.POWER_NAMES.length + 1);
 					}
 				}
 				d0 = d1;
@@ -382,7 +432,7 @@ public class BrainFlex extends JFrame implements BrainFlexGUI {
 			System.out.println("Done");
 		}
 		else {
-			final BrainFlex bf = new BrainFlex(comPort);
+			new BrainFlex(comPort);
 		}
 	}
 

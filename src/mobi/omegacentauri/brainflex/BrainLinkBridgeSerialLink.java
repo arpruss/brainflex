@@ -13,7 +13,6 @@ import java.io.IOException;
 
 import jssc.SerialPort;
 import jssc.SerialPortException;
-import jssc.SerialPortTimeoutException;
 
 public class BrainLinkBridgeSerialLink extends DataLink {
   // Use information from: http://www.brainlinksystem.com/brainlink-hardware-description
