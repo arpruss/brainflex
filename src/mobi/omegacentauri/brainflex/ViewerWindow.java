@@ -8,6 +8,7 @@ import java.awt.event.AdjustmentListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.text.DecimalFormat;
+import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -28,18 +29,22 @@ public class ViewerWindow extends JFrame {
 	static final double SCALE_MULT = 1.5;
 	double scale;
 	Pause pause;
+	private boolean raw;
 
 	public ViewerWindow(BrainFlex bf, boolean raw) {
 		this.bf = bf;
+		this.raw = raw;
 		scale = 1.;
 		pause = new Pause();
 		setSize(640,480);
 		setLocationByPlatform(true);
 		
-		if (raw)
+		if (raw) {
 			setTitle("Raw MindFlex data");
-		else
+		}
+		else {
 			setTitle("Processed MindFlex data");
+		}
 		
 		addWindowListener(new WindowListener() {
 			
@@ -122,7 +127,8 @@ public class ViewerWindow extends JFrame {
 		markButton.addActionListener(new ActionListener() {		
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Mark mark = new Mark((int)(System.currentTimeMillis()-ViewerWindow.this.bf.mfr.t0), ViewerWindow.this.bf.mfr.packetCount);
+				Mark mark = new Mark((int)(System.currentTimeMillis()-ViewerWindow.this.bf.mfr.t0), 
+						ViewerWindow.this.bf.mfr.rawData.size());
 				System.out.println("Mark "+mark.t+ " "+mark.rawCount);
 				ViewerWindow.this.bf.addMark(mark);
 			}
@@ -139,9 +145,8 @@ public class ViewerWindow extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (pause.point < 0) {
-					pause.point = ViewerWindow.this.bf.mfr.data.size();
+					pause.point = ViewerWindow.this.raw ? ViewerWindow.this.bf.mfr.rawData.size() : ViewerWindow.this.bf.mfr.powerData.size();
 					pause.pausedBadPacketCount = ViewerWindow.this.bf.mfr.badPacketCount;
-					pause.pausedPacketCount = ViewerWindow.this.bf.mfr.packetCount;
 				}
 				else {
 					pause.point = -1;
@@ -176,7 +181,6 @@ public class ViewerWindow extends JFrame {
 	public class Pause {
 	    int point = -1;
 		int pausedBadPacketCount;
-		int pausedPacketCount;
 	}
 
 	public void updateGraph() {

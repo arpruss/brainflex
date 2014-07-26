@@ -11,13 +11,14 @@ public class MindFlexReader {
 	public static final String[] POWER_NAMES = { "delta", "theta", "low-alpha", "high-alpha", "low-beta", "high-beta",
 		"low-gamma", "mid-gamma"
 	};
-	public List<Data> data;
+	public List<PowerData> powerData;
+	public List<Integer> rawData;
 	public long t0;
 	int badPacketCount;
-	private int rawPacketCount;
 	private int lastSignal;
-	private Data curData;
-	int packetCount;
+	private PowerData curPowerData;
+	private int curRaw;
+	private boolean haveRaw;
 	private long lastPaintTime;
 	public static final int MODE_NORMAL = 0;
 	public static final int MODE_RAW = 0x02; // 0x02;
@@ -32,8 +33,8 @@ public class MindFlexReader {
     	this.gui = gui;
     	this.dataLink = dataLink;
 		t0 = System.currentTimeMillis();
-		packetCount = 0;
-		data = new ArrayList<Data>();
+		powerData = new ArrayList<PowerData>();
+		rawData = new ArrayList<Integer>();
 		lastSignal = 100;
 		badPacketCount = 0;
     }
@@ -64,6 +65,7 @@ public class MindFlexReader {
 		while (!done && dataLink != null) {
 			try {
 				byte[] data = dataLink.receiveBytes();
+//				System.out.println("size "+data);
 				if (data != null) {
 					buffer = concat(buffer, data);
 	
@@ -98,7 +100,8 @@ public class MindFlexReader {
 	}
 
 	private void parsePacket(byte[] buffer, int pos, int packetLength) {
-		curData = new Data((int) (System.currentTimeMillis()-t0), rawPacketCount);
+		curPowerData = new PowerData((int) (System.currentTimeMillis()-t0));
+		haveRaw = false;
 
 		//System.out.println("Asked to parse "+pos+" "+packetLength+" of "+buffer.length);
 		int end = pos + packetLength - 1;
@@ -107,19 +110,20 @@ public class MindFlexReader {
 		rtLog("TIME "+System.currentTimeMillis());
 
 		while((pos = parseRow(buffer, pos, end)) < end);
-
-		if (curData.haveRaw || ( lastSignal == 0 && ( curData.havePower || curData.haveAttention || curData.haveMeditation ) ) ) {
-			synchronized(data) {
-				data.add(curData);
+		
+		if (haveRaw) {
+			synchronized(rawData) {
+				rawData.add(curRaw);
 			}
-			
-			if (curData.haveRaw)
-				rawPacketCount++;
-			
-			if (System.currentTimeMillis() - lastPaintTime > 250) {
-				lastPaintTime = System.currentTimeMillis();
-				gui.updateGraphs();
+		}
+		if (lastSignal < 50 && ( curPowerData.havePower || curPowerData.haveAttention || curPowerData.haveMeditation ) ) {
+			synchronized(powerData) {
+				powerData.add(curPowerData);
 			}
+		}
+		if (System.currentTimeMillis() - lastPaintTime > 250) {
+			lastPaintTime = System.currentTimeMillis();
+			gui.updateGraphs();
 		}
 	}
 
@@ -172,14 +176,14 @@ public class MindFlexReader {
 		case (byte)0x04:
 			v = 0xFF&(int)buffer[pos];
 		rtLog("ATTENTION "+v);
-		curData.attention = v / 100.;
-		curData.haveAttention = true;
+		curPowerData.attention = v / 100.;
+		curPowerData.haveAttention = true;
 		break;
 		case (byte)0x05:
 			v = 0xFF&(int)buffer[pos];
 		rtLog("MEDITATION "+v);
-		curData.meditation = v / 100.;
-		curData.haveMeditation = true;
+		curPowerData.meditation = v / 100.;
+		curPowerData.haveMeditation = true;
 		break;
 		case (byte)0x06:
 			rtLog("8BIT_RAW "+(0xFF&(int)buffer[pos]));
@@ -188,8 +192,8 @@ public class MindFlexReader {
 			rtLog("RAW_MARKER "+(0xFF&(int)buffer[pos]));
 		break;
 		case (byte)0x80:
-			curData.raw = (short)(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1])));
-			curData.haveRaw = true;
+			curRaw = (short)(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1])));
+			haveRaw = true;
 //			rtLog("RAW " + curData.raw);
 		break;
 		case (byte)0x81:
@@ -197,8 +201,8 @@ public class MindFlexReader {
 		break;
 		case (byte)0x82:
 //			rtLog("0x82 "+getUnsigned32(buffer,pos));
-			curData.raw = (short)(((0xFF&(int)buffer[pos+2])<<8) | ((0xFF&(int)buffer[pos+3])));
-			curData.haveRaw = true;
+			curRaw = (short)(((0xFF&(int)buffer[pos+2])<<8) | ((0xFF&(int)buffer[pos+3])));
+			haveRaw = true;
 		break;
 		case (byte)0x83:
 			parseASIC_EEG_POWER(buffer, pos);
@@ -226,12 +230,12 @@ public class MindFlexReader {
 		for (int i=0; i<POWER_NAMES.length; i++) {
 			int v = getUnsigned24(buffer, pos + 3 * i);
 			System.out.println(POWER_NAMES[i]+" "+v);
-			curData.power[i] = v;
+			curPowerData.power[i] = v;
 			sum += v;
 		}
 		for (int i=0; i<POWER_NAMES.length; i++)
-			curData.power[i] /= sum;
-		curData.havePower = true;
+			curPowerData.power[i] /= sum;
+		curPowerData.havePower = true;
 	}
 
 	private static int getUnsigned24(byte[] buffer, int pos) {
@@ -255,14 +259,11 @@ public class MindFlexReader {
 		int pLength = 0xFF & (int)buffer[i+2];
 		if (pLength > 169) {
 			badPacketCount++;
-			packetCount++;
 			return PACKET_NO;
 		}
 		if (buffer.length < i+4+pLength)
 			return PACKET_MAYBE;
 		
-		packetCount++;
-
 		byte sum = 0;
 		for (int j=0; j<pLength; j++)
 			sum += buffer[i+3+j];
@@ -297,22 +298,17 @@ public class MindFlexReader {
 			System.out.println(s);
 	}
 
-	public class Data {
+	public class PowerData {
 		int t;
-		int rawCount;
 		double[] power = new double[MindFlexReader.POWER_NAMES.length];
 		boolean havePower;
 		boolean haveMeditation;
 		boolean haveAttention;
-		boolean haveRaw;
 		double meditation;
 		double attention;
-		int raw;
 		
-
-		public Data(int t, int rawPacketCount) {
+		public PowerData(int t) {
 			this.t = t;
-			this.rawCount = MindFlexReader.this.rawPacketCount;
 		}
 	}
 	

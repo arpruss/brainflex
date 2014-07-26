@@ -82,9 +82,15 @@ public class BrainFlex implements BrainFlexGUI {
 		return mode;
 	}
 	
-	public List<MindFlexReader.Data> getDataCopy() {
-		synchronized (mfr.data) {
-			return new ArrayList<MindFlexReader.Data>(mfr.data);
+	public List<MindFlexReader.PowerData> getPowerDataCopy() {
+		synchronized (mfr.powerData) {
+			return new ArrayList<MindFlexReader.PowerData>(mfr.powerData);
+		}
+	}
+	
+	public List<Integer> getRawDataCopy() {
+		synchronized (mfr.powerData) {
+			return new ArrayList<Integer>(mfr.rawData);
 		}
 	}
 	

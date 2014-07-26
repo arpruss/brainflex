@@ -6,7 +6,8 @@ public interface BrainFlexGUI {
 	void updateGraphs();
 	void terminate();
 	int getMode();
-	List<MindFlexReader.Data> getDataCopy();
+	List<MindFlexReader.PowerData> getPowerDataCopy();
+	List<Integer> getRawDataCopy();
 	List<Mark> getMarksCopy();
 	MindFlexReader getMindFlexReader();
 	

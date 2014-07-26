@@ -9,7 +9,6 @@ import java.util.List;
 import javax.swing.JScrollBar;
 
 import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
-import mobi.omegacentauri.brainflex.MindFlexReader.Data;
 
 public class RawGraphPanel extends GraphPanel {
 	/**
@@ -23,19 +22,27 @@ public class RawGraphPanel extends GraphPanel {
 	}
 
 	@Override
-	protected void draw(Graphics2D g2, Dimension s, List<MindFlexReader.Data> data,
-			List<BrainFlexGUI.Mark> marks, int n) {
+	protected void draw(Graphics2D g2, Dimension s, 
+			List<BrainFlexGUI.Mark> marks) {
+		List<Integer> data = gui.getRawDataCopy();
+		
+		int n = w.pause.point < 0 ? data.size() : w.pause.point;
+		if (n<1)
+			return;
+		
+		w.setTime(n * 1000 / 512, n, w.pause.point < 0 ? mfr.badPacketCount : w.pause.pausedBadPacketCount );
+				
 		if (n<2)
 			return;
 
-		calculateTSize(s, (double)data.get(n-1).rawCount, w.scale * VISIBLE, 16., 1.);
+		calculateTSize(s, n-1, w.scale * VISIBLE, 16., 1.);
 
 		double ySize = 0;
-		for (MindFlexReader.Data d: data) {
-			if (d.raw > ySize)
-				ySize = d.raw;
-			else if (-d.raw > ySize)
-				ySize = -d.raw;
+		for (int y: data) {
+			if (y > ySize)
+				ySize = y;
+			else if (-y > ySize)
+				ySize = -y;
 		}
 		
 		ySize *= 2;
@@ -48,21 +55,20 @@ public class RawGraphPanel extends GraphPanel {
 		
 		g2.setColor(Color.BLUE);
 		for (Mark m: marks) {
-			Line2D lin = new Line2D.Double(scaleT(m.rawCount), 0,
-					scaleT(m.rawCount), s.getHeight());
-			g2.draw(lin);
+			if (startT <= m.rawCount && m.rawCount < endT) {
+				Line2D lin = new Line2D.Double(scaleT(m.rawCount), 0,
+						scaleT(m.rawCount), s.getHeight());
+				g2.draw(lin);
+			}
 		}
 
 		g2.setColor(Color.BLACK);
-		MindFlexReader.Data d0 = null;
+		int d0 = 0;
 
-		for (int i=0; i<n; i++) {
-			MindFlexReader.Data d1 = data.get(i);
-			if (0<i && d0.haveRaw && d1.haveRaw &&
-					d0.rawCount >= startT && d1.rawCount <= endT
-					) { 
-				
-				scaledLine(g2, d0.rawCount, ySize / 2 - d0.raw, d1.rawCount, ySize / 2 - d1.raw, 0);
+		for (int i=(int)startT; i<endT && i<n; i++) {
+			int d1 = data.get(i);
+			if (0<i) { 
+				scaledLine(g2, i-1, ySize / 2 - d0, i, ySize / 2 - d1, 0);
 			}
 			d0 = d1;
 		}		

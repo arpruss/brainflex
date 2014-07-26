@@ -19,7 +19,7 @@ public abstract class GraphPanel extends JPanel {
 	double subgraphHeight;
 	private JScrollBar scrollBar;
 	protected BrainFlexGUI gui;
-	private MindFlexReader mfr;
+	protected MindFlexReader mfr;
 	protected ViewerWindow w;
 	
 	public GraphPanel(BrainFlexGUI gui, ViewerWindow w) {
@@ -34,28 +34,10 @@ public abstract class GraphPanel extends JPanel {
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 
-		Graphics2D g2 = (Graphics2D) g;
-		Dimension s = getSize();
-		
-		List<MindFlexReader.Data> dataCopy = gui.getDataCopy();
-		
-		int n = w.pause.point < 0 ? dataCopy.size() : w.pause.point;
-		if (n<1)
-			return;
-		int t = n > 0 ? dataCopy.get(n-1).t : 0;
-		
-		if (w.pause.point < 0) {
-			w.setTime(t, mfr.packetCount, mfr.badPacketCount);
-		}
-		else {
-			w.setTime(t, w.pause.pausedPacketCount, w.pause.pausedBadPacketCount);
-		}
-		
-		draw(g2, s, dataCopy, gui.getMarksCopy(), n);
+		draw((Graphics2D)g, getSize(), gui.getMarksCopy());
 	}
 	
-	protected abstract void draw(Graphics2D g2, Dimension s, List<MindFlexReader.Data> dataCopy,
-			List<BrainFlexGUI.Mark> marks, int n);
+	protected abstract void draw(Graphics2D g2, Dimension s, List<BrainFlexGUI.Mark> marks);
 	
 	double scaleT(double t) {
 		return (t - startT) * tScale;
@@ -93,6 +75,12 @@ public abstract class GraphPanel extends JPanel {
 	}
 	
 	void scaledLine(Graphics2D g2, double t1, double y1, double t2, double y2, int subgraph) {
+		if (subgraph == 5 && t1 < 1000) {
+			System.out.println(""+t1+","+y1+","+t2+","+y2+" "+scaleT(t1)+","+ 
+					(y1 * yScale + subgraphHeight * subgraph)+","+
+					scaleT(t2)+","+ 
+					(y2 * yScale + subgraphHeight * subgraph));
+		}
 		g2.draw(new Line2D.Double(scaleT(t1), 
 				y1 * yScale + subgraphHeight * subgraph,
 				scaleT(t2), 

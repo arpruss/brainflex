@@ -15,7 +15,7 @@ public class PowerGraphPanel extends GraphPanel {
 	 * 
 	 */
 	private static final long serialVersionUID = -4623488847975233096L;
-	private static final int VISIBLE=512;
+	private static final int VISIBLE=512 * 1000;
 	private static final int SPACING = 3;
 
 	public PowerGraphPanel(BrainFlexGUI gui, ViewerWindow w) {
@@ -24,15 +24,27 @@ public class PowerGraphPanel extends GraphPanel {
 	
 	@Override
 	protected
-	void draw(Graphics2D g2, Dimension s, List<MindFlexReader.Data> data, List<BrainFlexGUI.Mark> marks, int n) {
+	void draw(Graphics2D g2, Dimension s, List<BrainFlexGUI.Mark> marks) {
+		List<MindFlexReader.PowerData> data = gui.getPowerDataCopy();
+		
+		int n = w.pause.point < 0 ? data.size() : w.pause.point;
+		if (n<1)
+			return;
+		int t = n > 0 ? data.get(n-1).t : 0;
+		
+		w.setTime(t, n, w.pause.point < 0 ? mfr.badPacketCount : w.pause.pausedBadPacketCount );
+
 		if (n<2)
 			return;
 
-		calculateTSize(s, (double)data.get(n-1).t, w.scale * VISIBLE, 1000., 10.);
+		calculateTSize(s, (double)data.get(n-1).t, w.scale * VISIBLE, 1000., 1.);
+		
+		System.out.println("Draw "+startT+" "+endT+" "+tScale);
 
 		double ySize = 0;
-		for (MindFlexReader.Data d: data) 
-			for (double y: d.power)
+
+		for (int i=0; i<n; i++) 
+			for (double y: data.get(i).power)
 				if (y > ySize)
 					ySize = y;
 
@@ -40,11 +52,15 @@ public class PowerGraphPanel extends GraphPanel {
 		subgraphHeight = subgraphContentHeight + SPACING;
 		yScale = subgraphContentHeight / ySize;
 
+		System.out.println("ySize = "+ySize+" sh="+subgraphHeight+" sch="+subgraphContentHeight+" yS ="+yScale);
+
 		g2.setColor(Color.BLUE);
 		for (Mark m: marks) {
-			Line2D lin = new Line2D.Double(scaleT(m.t), 0,
-					scaleT(m.t), s.getHeight());
-			g2.draw(lin);
+			if (startT <= m.t && m.t < endT) {
+				Line2D lin = new Line2D.Double(scaleT(m.t), 0,
+						scaleT(m.t), s.getHeight());
+				g2.draw(lin);
+			}
 		}
 
 		g2.setColor(Color.GREEN);
@@ -64,22 +80,23 @@ public class PowerGraphPanel extends GraphPanel {
 				0, (int)((1+MindFlexReader.POWER_NAMES.length) * subgraphHeight + ySize * .5 * yScale));
 
 		g2.setColor(Color.BLACK);
-		MindFlexReader.Data d0 = null;
+		MindFlexReader.PowerData d0 = null;
 
 		for (int i=0; i<n; i++) {
-			MindFlexReader.Data d1 = data.get(i);
+			MindFlexReader.PowerData d1 = data.get(i);
 			if (0<i && startT <= d0.t && d1.t <= endT) { 
 				if (d0.havePower && d1.havePower) { 
 					for (int j=0; j<MindFlexReader.POWER_NAMES.length; j++) {
+						if (j==5) System.out.println("hmm");
 						scaledLine(g2, d0.t, ySize - d0.power[j], d1.t, ySize - d1.power[j], j);
 					}
 				}
 				if (d0.haveAttention && d1.haveAttention) {
-					scaledLine(g2, d0.t, (1 - d0.attention)*ySize, d1.t, (1-d0.attention)*ySize, 
+					scaledLine(g2, d0.t, (1 - d0.attention)*ySize, d1.t, (1-d1.attention)*ySize, 
 								MindFlexReader.POWER_NAMES.length);
 				}
 				if (d0.haveMeditation && d1.haveMeditation) {
-					scaledLine(g2, d0.t, (1 - d0.meditation)*ySize, d1.t, (1-d0.meditation)*ySize, 
+					scaledLine(g2, d0.t, (1 - d0.meditation)*ySize, d1.t, (1-d1.meditation)*ySize, 
 							MindFlexReader.POWER_NAMES.length + 1);
 				}
 			}
