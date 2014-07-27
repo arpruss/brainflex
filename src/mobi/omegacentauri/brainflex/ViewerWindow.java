@@ -23,17 +23,18 @@ public class ViewerWindow extends JFrame {
 	private static final long serialVersionUID = 7102164930300849382L;
 	public JScrollBar scrollBar;
 	private final BrainFlex bf;
+	private final MindFlexReader mfr;
 	public JTextField timeText;
 	static final double MIN_SCALE = 1/16.;
 	static final double MAX_SCALE = 4.;
 	static final double SCALE_MULT = 1.5;
 	double scale;
 	Pause pause;
-	private boolean raw;
+	List<?> data;
 
 	public ViewerWindow(BrainFlex bf, boolean raw) {
 		this.bf = bf;
-		this.raw = raw;
+		this.mfr = bf.mfr;
 		scale = 1.;
 		pause = new Pause();
 		setSize(640,480);
@@ -41,9 +42,11 @@ public class ViewerWindow extends JFrame {
 		
 		if (raw) {
 			setTitle("Raw MindFlex data");
+			data = mfr.rawData;
 		}
 		else {
 			setTitle("Processed MindFlex data");
+			data = mfr.powerData;
 		}
 		
 		addWindowListener(new WindowListener() {
@@ -82,7 +85,7 @@ public class ViewerWindow extends JFrame {
 
 		scrollBar = new JScrollBar(JScrollBar.HORIZONTAL);		
 
-		final GraphPanel graph = raw ? new RawGraphPanel(bf, this) : new PowerGraphPanel(bf, this);	
+		final GraphPanel graph = raw ? new RawGraphPanel(bf, this, data) : new PowerGraphPanel(bf, this, data);	
 		getContentPane().add(graph);
 		
 		getContentPane().add(scrollBar);
@@ -127,8 +130,8 @@ public class ViewerWindow extends JFrame {
 		markButton.addActionListener(new ActionListener() {		
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Mark mark = new Mark((int)(System.currentTimeMillis()-ViewerWindow.this.bf.mfr.t0), 
-						ViewerWindow.this.bf.mfr.rawData.size());
+				Mark mark = new Mark((int)(System.currentTimeMillis()-ViewerWindow.this.mfr.t0), 
+						ViewerWindow.this.mfr.rawData.size());
 				System.out.println("Mark "+mark.t+ " "+mark.rawCount);
 				ViewerWindow.this.bf.addMark(mark);
 			}
@@ -137,7 +140,7 @@ public class ViewerWindow extends JFrame {
 		exitButton.addActionListener(new ActionListener() {		
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				ViewerWindow.this.bf.mfr.stop();
+				ViewerWindow.this.mfr.stop();
 			}
 		}); 	
 		JButton pauseButton = new JButton("Pause");
@@ -145,8 +148,8 @@ public class ViewerWindow extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (pause.point < 0) {
-					pause.point = ViewerWindow.this.raw ? ViewerWindow.this.bf.mfr.rawData.size() : ViewerWindow.this.bf.mfr.powerData.size();
-					pause.pausedBadPacketCount = ViewerWindow.this.bf.mfr.badPacketCount;
+					pause.point = ViewerWindow.this.data.size();
+					pause.pausedBadPacketCount = ViewerWindow.this.mfr.badPacketCount;
 				}
 				else {
 					pause.point = -1;
@@ -155,8 +158,8 @@ public class ViewerWindow extends JFrame {
 			}
 		}); 	
 		timeText = new JTextField();
-		setTime(0, 0, 0);
 		timeText.setEditable(false);
+		setTime(0, 0, 0);
 		Dimension m = timeText.getMaximumSize();
 		Dimension p = timeText.getPreferredSize();
 		m.height = p.height;
@@ -175,7 +178,7 @@ public class ViewerWindow extends JFrame {
 	}
 
 	public void setTime(int t, int c, int bad) {
-		timeText.setText(new DecimalFormat("0.000").format(t/1000.)+"s ("+c+" good packets, "+bad+" bad packets)");
+		timeText.setText(new DecimalFormat("0.000").format(t/1000.)+"s ("+c+" packets; "+bad+" bad packets)");
 	}
 	
 	public class Pause {

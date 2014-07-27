@@ -21,13 +21,15 @@ public abstract class GraphPanel extends JPanel {
 	protected BrainFlexGUI gui;
 	protected MindFlexReader mfr;
 	protected ViewerWindow w;
+	protected List<?> origData;
 	
-	public GraphPanel(BrainFlexGUI gui, ViewerWindow w) {
+	public GraphPanel(BrainFlexGUI gui, ViewerWindow w, List<?> data) {
 		super();
 		this.w = w;
 		this.gui = gui;
 		this.mfr = gui.getMindFlexReader();
 		this.scrollBar = w.scrollBar;
+		this.origData = data;
 	}
 	
 	@Override

@@ -4,9 +4,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
+import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.JScrollBar;
 
 import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
 
@@ -17,14 +16,15 @@ public class RawGraphPanel extends GraphPanel {
 	private static final long serialVersionUID = 8739434584974120909L;
 	public static final int VISIBLE = 1500;
 
-	public RawGraphPanel(BrainFlexGUI gui, ViewerWindow w) {
-		super(gui, w);
+	public RawGraphPanel(BrainFlexGUI gui, ViewerWindow w, List<?> data) {
+		super(gui, w, data);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	protected void draw(Graphics2D g2, Dimension s, 
 			List<BrainFlexGUI.Mark> marks) {
-		List<Integer> data = gui.getRawDataCopy();
+		List<Integer> data = new ArrayList<Integer>((List<Integer>) origData);
 		
 		int n = w.pause.point < 0 ? data.size() : w.pause.point;
 		if (n<1)

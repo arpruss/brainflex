@@ -4,28 +4,25 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
+import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.JScrollBar;
 
 import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
 
 public class PowerGraphPanel extends GraphPanel {
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -4623488847975233096L;
 	private static final int VISIBLE=512 * 1000;
 	private static final int SPACING = 3;
 
-	public PowerGraphPanel(BrainFlexGUI gui, ViewerWindow w) {
-		super(gui, w);
+	public PowerGraphPanel(BrainFlexGUI gui, ViewerWindow w, List<?> data) {
+		super(gui, w, data);
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	protected
 	void draw(Graphics2D g2, Dimension s, List<BrainFlexGUI.Mark> marks) {
-		List<MindFlexReader.PowerData> data = gui.getPowerDataCopy();
+		List<MindFlexReader.PowerData> data = new ArrayList<MindFlexReader.PowerData>((List<MindFlexReader.PowerData>)origData);
 		
 		int n = w.pause.point < 0 ? data.size() : w.pause.point;
 		if (n<1)
@@ -39,8 +36,6 @@ public class PowerGraphPanel extends GraphPanel {
 
 		calculateTSize(s, (double)data.get(n-1).t, w.scale * VISIBLE, 1000., 1.);
 		
-		System.out.println("Draw "+startT+" "+endT+" "+tScale);
-
 		double ySize = 0;
 
 		for (int i=0; i<n; i++) 
@@ -51,8 +46,6 @@ public class PowerGraphPanel extends GraphPanel {
 		double subgraphContentHeight = (s.getHeight() - SPACING * (1+MindFlexReader.POWER_NAMES.length) ) / (2+MindFlexReader.POWER_NAMES.length);
 		subgraphHeight = subgraphContentHeight + SPACING;
 		yScale = subgraphContentHeight / ySize;
-
-		System.out.println("ySize = "+ySize+" sh="+subgraphHeight+" sch="+subgraphContentHeight+" yS ="+yScale);
 
 		g2.setColor(Color.BLUE);
 		for (Mark m: marks) {
@@ -87,7 +80,6 @@ public class PowerGraphPanel extends GraphPanel {
 			if (0<i && startT <= d0.t && d1.t <= endT) { 
 				if (d0.havePower && d1.havePower) { 
 					for (int j=0; j<MindFlexReader.POWER_NAMES.length; j++) {
-						if (j==5) System.out.println("hmm");
 						scaledLine(g2, d0.t, ySize - d0.power[j], d1.t, ySize - d1.power[j], j);
 					}
 				}

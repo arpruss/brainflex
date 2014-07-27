@@ -218,12 +218,12 @@ public class MindFlexReader {
 		return pos+dataLength;
 	}
 
-	private long getUnsigned32(byte[] buffer, int pos) {
-		return ((0xFF&(long)buffer[pos]) << 24) |
-				((0xFF&(long)buffer[pos+1]) << 16) |
-				((0xFF&(long)buffer[pos+2]) << 8) |
-				((0xFF&(long)buffer[pos+3]));
-	}
+//	private long getUnsigned32(byte[] buffer, int pos) {
+//		return ((0xFF&(long)buffer[pos]) << 24) |
+//				((0xFF&(long)buffer[pos+1]) << 16) |
+//				((0xFF&(long)buffer[pos+2]) << 8) |
+//				((0xFF&(long)buffer[pos+3]));
+//	}
 
 	private void parseASIC_EEG_POWER(byte[] buffer, int pos) {
 		double sum = 0;
@@ -282,16 +282,16 @@ public class MindFlexReader {
 		return out;
 	}
 
-	private static void sleep(final int millis)
-	{
-		try
-		{
-			Thread.sleep(millis);
-		}
-		catch (InterruptedException e)
-		{
-		}
-	}
+//	private static void sleep(final int millis)
+//	{
+//		try
+//		{
+//			Thread.sleep(millis);
+//		}
+//		catch (InterruptedException e)
+//		{
+//		}
+//	}
 	
 	public void rtLog(String s) {
 		if (mode < MODE_RAW)

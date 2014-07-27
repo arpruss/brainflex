@@ -7,29 +7,13 @@
 
 package mobi.omegacentauri.brainflex;
 
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.AdjustmentEvent;
-import java.awt.event.AdjustmentListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollBar;
-import javax.swing.JTextField;
-
-import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
 
 public class BrainFlex implements BrainFlexGUI {
 	private List<Mark> marks;
