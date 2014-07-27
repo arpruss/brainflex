@@ -77,12 +77,6 @@ public abstract class GraphPanel extends JPanel {
 	}
 	
 	void scaledLine(Graphics2D g2, double t1, double y1, double t2, double y2, int subgraph) {
-		if (subgraph == 5 && t1 < 1000) {
-			System.out.println(""+t1+","+y1+","+t2+","+y2+" "+scaleT(t1)+","+ 
-					(y1 * yScale + subgraphHeight * subgraph)+","+
-					scaleT(t2)+","+ 
-					(y2 * yScale + subgraphHeight * subgraph));
-		}
 		g2.draw(new Line2D.Double(scaleT(t1), 
 				y1 * yScale + subgraphHeight * subgraph,
 				scaleT(t2), 

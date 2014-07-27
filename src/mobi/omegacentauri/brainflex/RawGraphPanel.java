@@ -14,7 +14,8 @@ public class RawGraphPanel extends GraphPanel {
 	 * 
 	 */
 	private static final long serialVersionUID = 8739434584974120909L;
-	public static final int VISIBLE = 1500;
+	private static final int RAW_PER_SECOND = 515; // what an odd number!  Why not 512?
+	public static final int VISIBLE = RAW_PER_SECOND * 3;
 
 	public RawGraphPanel(BrainFlexGUI gui, ViewerWindow w, List<?> data) {
 		super(gui, w, data);
@@ -30,7 +31,7 @@ public class RawGraphPanel extends GraphPanel {
 		if (n<1)
 			return;
 		
-		w.setTime(n * 1000 / 512, n, w.pause.point < 0 ? mfr.badPacketCount : w.pause.pausedBadPacketCount );
+		w.setTime(n * 1000 / RAW_PER_SECOND, n, w.pause.point < 0 ? mfr.badPacketCount : w.pause.pausedBadPacketCount );
 				
 		if (n<2)
 			return;

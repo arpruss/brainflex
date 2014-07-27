@@ -1,0 +1,75 @@
+/**
+*
+* Copyright (c) 2014 Alexander Pruss
+* Distributed under the GNU GPL v3 or later. For full terms see the file COPYING.
+*
+*/
+
+package mobi.omegacentauri.brainflex;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+public class FileDataLink extends DataLink {
+	 private FileInputStream in;
+	 public final int BUFFER_SIZE = 7;
+
+	public FileDataLink(String s) {
+		 try {
+			in = new FileInputStream(s);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	 }
+
+	public byte[] receiveBytes() {
+		byte[] buff = new byte[BUFFER_SIZE];
+		int size;
+		try {
+			size = in.read(buff);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+		if (size <= 0)
+			return null;
+		if (size < BUFFER_SIZE) {
+			byte[] b2 = new byte[size];
+			System.arraycopy(buff, 0, b2, 0, size);
+			return b2;
+		}
+		return buff;
+	}
+
+	 public void transmit(byte... data) {
+	 }
+	 
+	 public void transmit(int... data) {
+	 }
+
+	public void clearBuffer() {
+	}
+	
+	public void start(int baud) {
+	}
+	
+	public void stop() {
+		try {
+			in.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	// quick pre-initialization, possibly at a different baud rate from the main one
+	public void preStart(int baud, byte[] data) {
+	}
+
+	public boolean valid() {
+		return true;
+	}
+}

@@ -25,6 +25,7 @@ public class BrainFlex implements BrainFlexGUI {
 
 	public BrainFlex(final String comPort) {
 		DataLink dataLink = customBrainlinkFW ? new BrainLinkBridgeSerialLink(comPort) : new BrainLinkSerialLinkLL(comPort); 
+		//DataLink dataLink = new FileDataLink(comPort);
 		if (! dataLink.valid()) {
 			mfr = null;
 			return;

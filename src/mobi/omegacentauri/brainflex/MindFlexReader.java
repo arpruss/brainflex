@@ -1,5 +1,7 @@
 package mobi.omegacentauri.brainflex;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +29,8 @@ public class MindFlexReader {
 	private DataLink dataLink;
 	private BrainFlexGUI gui;
 	private int mode;
+	static private final boolean LOG = false;
+	static private final boolean DUMP = false;
 
     public MindFlexReader(BrainFlexGUI gui, DataLink dataLink, int mode) {
     	this.mode = mode;
@@ -41,6 +45,12 @@ public class MindFlexReader {
     
 
 	void readData() throws IOException {
+		FileOutputStream out;
+		if (DUMP) {
+			File f = new File("data.bin");
+			f.delete();
+			out = new FileOutputStream(f);
+		}
 		byte[] buffer = new byte[0];
 
 		System.out.println("CONNECTING");
@@ -62,21 +72,29 @@ public class MindFlexReader {
 		//		sleep(100);
 		System.out.println("CONNECTED");
 		
-		while (!done && dataLink != null) {
+		t0 = System.currentTimeMillis();
+
+		while (!done && dataLink != null && 
+				(!DUMP || System.currentTimeMillis() - t0 < 30000) ) {
 			try {
 				byte[] data = dataLink.receiveBytes();
-//				System.out.println("size "+data);
 				if (data != null) {
+					if (DUMP)
+						out.write(data);
 					buffer = concat(buffer, data);
 	
-					for (int i = 0; i < buffer.length; i++) {
+					int i;
+					int n = buffer.length;
+					
+					for (i = 0; i < n; i++) {
 						if (buffer[i] == (byte)0xAA) {
 							int length = detectPacket0(buffer, i);
 							if (length == PACKET_MAYBE) {
 								// possible start of unfinished packet
-								byte[] newBuffer = new byte[buffer.length - i];
+								byte[] newBuffer = new byte[n - i];
 								System.arraycopy(buffer, i, newBuffer, 0, buffer.length - i);
 								buffer = newBuffer;
+								break;
 							}
 							else if (length > 0) {
 								parsePacket(buffer, i, length);
@@ -84,6 +102,9 @@ public class MindFlexReader {
 							}
 						}
 					}
+					
+					if (i >= n)
+						buffer = new byte[0];
 				}
 			}
 			catch(Exception e) {				
@@ -91,6 +112,8 @@ public class MindFlexReader {
 		} 
 
 		System.out.println("Terminated");
+		System.out.println("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t));
+		System.out.println("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t));
 		if (dataLink != null) {
 			dataLink.stop();
 			dataLink = null;
@@ -107,18 +130,21 @@ public class MindFlexReader {
 		int end = pos + packetLength - 1;
 		pos += 3;
 
-		rtLog("TIME "+System.currentTimeMillis());
-
 		while((pos = parseRow(buffer, pos, end)) < end);
 		
 		if (haveRaw) {
 			synchronized(rawData) {
 				rawData.add(curRaw);
 			}
+//				if (rawData.size() % 10000 == 0) {
+//					System.out.println("Have "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t));
+//				}
 		}
+
 		if (lastSignal < 50 && ( curPowerData.havePower || curPowerData.haveAttention || curPowerData.haveMeditation ) ) {
 			synchronized(powerData) {
 				powerData.add(curPowerData);
+				log("TIME "+curPowerData.t);
 			}
 		}
 		if (System.currentTimeMillis() - lastPaintTime > 250) {
@@ -159,7 +185,7 @@ public class MindFlexReader {
 			return end;
 
 //		if (excodeLevel > 0) {
-//			rtLog("UNPARSED "+excodeLevel+" "+code);
+//			log("UNPARSED "+excodeLevel+" "+code);
 //			return pos + dataLength;
 //		}
 
@@ -167,29 +193,29 @@ public class MindFlexReader {
 
 		switch(code) {
 		case (byte)0x02:
-			rtLog("POOR_SIGNAL "+(0xFF&(int)buffer[pos]));
+			log("POOR_SIGNAL "+(0xFF&(int)buffer[pos]));
 		lastSignal = (0xFF)&(int)buffer[pos];
 		break;
 		case (byte)0x03:
-			rtLog("HEART_RATE "+(0xFF&(int)buffer[pos]));
+			log("HEART_RATE "+(0xFF&(int)buffer[pos]));
 		break;
 		case (byte)0x04:
 			v = 0xFF&(int)buffer[pos];
-		rtLog("ATTENTION "+v);
+		log("ATTENTION "+v);
 		curPowerData.attention = v / 100.;
 		curPowerData.haveAttention = true;
 		break;
 		case (byte)0x05:
 			v = 0xFF&(int)buffer[pos];
-		rtLog("MEDITATION "+v);
+		log("MEDITATION "+v);
 		curPowerData.meditation = v / 100.;
 		curPowerData.haveMeditation = true;
 		break;
 		case (byte)0x06:
-			rtLog("8BIT_RAW "+(0xFF&(int)buffer[pos]));
+			log("8BIT_RAW "+(0xFF&(int)buffer[pos]));
 		break;
 		case (byte)0x07:
-			rtLog("RAW_MARKER "+(0xFF&(int)buffer[pos]));
+			log("RAW_MARKER "+(0xFF&(int)buffer[pos]));
 		break;
 		case (byte)0x80:
 			curRaw = (short)(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1])));
@@ -197,7 +223,7 @@ public class MindFlexReader {
 //			rtLog("RAW " + curData.raw);
 		break;
 		case (byte)0x81:
-			rtLog("EEG_POWER unsupported");
+			log("EEG_POWER unsupported");
 		break;
 		case (byte)0x82:
 //			rtLog("0x82 "+getUnsigned32(buffer,pos));
@@ -208,10 +234,10 @@ public class MindFlexReader {
 			parseASIC_EEG_POWER(buffer, pos);
 		break;
 		case (byte)0x86:
-			rtLog("RRINTERVAL "+(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1]))) );
+			log("RRINTERVAL "+(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1]))) );
 		break;
 		default:
-			rtLog("UNPARSED "/* +excodeLevel+*/+" "+code);
+			log("UNPARSED "/* +excodeLevel+*/+" "+code);
 			break;
 		}
 		
@@ -229,7 +255,7 @@ public class MindFlexReader {
 		double sum = 0;
 		for (int i=0; i<POWER_NAMES.length; i++) {
 			int v = getUnsigned24(buffer, pos + 3 * i);
-			System.out.println(POWER_NAMES[i]+" "+v);
+			log(POWER_NAMES[i]+" "+v);
 			curPowerData.power[i] = v;
 			sum += v;
 		}
@@ -269,7 +295,8 @@ public class MindFlexReader {
 			sum += buffer[i+3+j];
 		if ((sum ^ buffer[i+3+pLength]) != (byte)0xFF) {
 			badPacketCount++;
-			rtLog("CSUMERROR "+sum+" vs "+buffer[i+3+pLength]);
+			if (mode < MODE_RAW) 
+				log("CSUMERROR "+sum+" vs "+buffer[i+3+pLength]);
 			return PACKET_NO;
 		}
 		return 4+pLength;
@@ -293,8 +320,8 @@ public class MindFlexReader {
 //		}
 //	}
 	
-	public void rtLog(String s) {
-		if (mode < MODE_RAW)
+	public void log(String s) {
+		if (LOG)
 			System.out.println(s);
 	}
 
