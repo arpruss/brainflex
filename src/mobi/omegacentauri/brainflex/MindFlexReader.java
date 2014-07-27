@@ -54,15 +54,24 @@ public class MindFlexReader {
 		byte[] buffer = new byte[0];
 
 		System.out.println("CONNECTING");
+		if (dataLink.getFixedBaud() == 57600 && mode < MODE_RAW)
+			mode = MODE_RAW;
+		if (dataLink.getFixedBaud() == 9600)
+			mode = MODE_NORMAL;
+		
 		int baud = 9600;
 		if (mode != MODE_NORMAL) {
 			dataLink.preStart(9600, new byte[] { (byte)mode });
-			if (mode >= 0x02)
+			if (mode >= MODE_RAW)
 				baud = 57600;
 			else if (mode == 0x01)
 				baud = 1200;
 		}
 		dataLink.start(baud);
+
+//		dataLink.start(57600);
+//		dataLink.transmitFakeBaud(9600, (byte)mode);
+		
 		// 0x00 : 9600 : normal
 		// 0x01 : 1200
 		// 0x02 : 57600 : RAW
@@ -112,8 +121,10 @@ public class MindFlexReader {
 		} 
 
 		System.out.println("Terminated");
-		System.out.println("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t));
-		System.out.println("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t));
+		if (curPowerData != null) {
+			System.out.println("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
+			System.out.println("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
+		}
 		if (dataLink != null) {
 			dataLink.stop();
 			dataLink = null;

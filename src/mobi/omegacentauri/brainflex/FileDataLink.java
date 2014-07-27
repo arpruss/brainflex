@@ -54,6 +54,7 @@ public class FileDataLink extends DataLink {
 	}
 	
 	public void start(int baud) {
+		this.baud = baud;
 	}
 	
 	public void stop() {
@@ -66,10 +67,16 @@ public class FileDataLink extends DataLink {
 	}
 
 	// quick pre-initialization, possibly at a different baud rate from the main one
+	@Override
 	public void preStart(int baud, byte[] data) {
 	}
 
-	public boolean valid() {
+	public boolean isValid() {
 		return true;
+	}
+
+	@Override
+	public int getFixedBaud() {
+		return 0;
 	}
 }

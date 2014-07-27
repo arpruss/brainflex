@@ -26,7 +26,6 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 	private static final byte[] BAUD38400 = { '*', 'C', 0, (byte)(204&0xFF), -2 };
 
 	private SerialPort p;
-	private int baud;
 	private boolean valid;
 
 	public BrainLinkBridgeSerialLink(String port) {
@@ -114,6 +113,7 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 		}
 	}
 
+	@Override
 	public void preStart(int preBaud, byte[] data) {
 		setBaud(preBaud);
 		try {
@@ -124,7 +124,12 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 		}		
 	}
 	
-	public boolean valid() {
+	public boolean isValid() {
 		return valid;
+	}
+
+	@Override
+	public int getFixedBaud() {
+		return 0;
 	}
 }

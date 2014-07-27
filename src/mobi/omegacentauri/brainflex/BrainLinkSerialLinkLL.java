@@ -27,7 +27,6 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	private static final byte[] BAUD38400 = { '*', 'C', 0, (byte)(204&0xFF), -2 };
 
 	private SerialPort p;
-	private int baud;
 	private boolean valid;
 
 	public BrainLinkSerialLinkLL(String port) {
@@ -88,7 +87,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	public byte[] receiveBytes() {
 		try {
 			p.writeBytes(new byte[] { '*','r' } );
-			if (!readUntil((byte)'*',100) || !readUntil((byte)'r',600))
+			if (!readUntil((byte)'*',600) || !readUntil((byte)'r',600))
 				return null;
 			byte[] oneByte = p.readBytes(1, scaleTimeout(50));
 			if (oneByte.length != 1)
@@ -155,7 +154,12 @@ public class BrainLinkSerialLinkLL extends DataLink {
 		receiveBytes();
 	}
 	
-	public boolean valid() {
+	public boolean isValid() {
 		return valid;
+	}
+
+	@Override
+	public int getFixedBaud() {
+		return 0;
 	}
 }

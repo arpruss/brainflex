@@ -46,7 +46,7 @@ public class RawGraphPanel extends GraphPanel {
 				ySize = -y;
 		}
 		
-		ySize *= 2;
+		ySize *= 2.2;
 		
 		if (ySize < 0)
 			ySize = 1;
