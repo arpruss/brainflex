@@ -29,13 +29,14 @@ public class MindFlexReader {
 	private DataLink dataLink;
 	private BrainFlexGUI gui;
 	private int mode;
+	private File saveFile;
 	static private final boolean LOG = false;
-	static private final boolean DUMP = false;
 
-    public MindFlexReader(BrainFlexGUI gui, DataLink dataLink, int mode) {
+    public MindFlexReader(BrainFlexGUI gui, DataLink dataLink, int mode, File saveFile) {
     	this.mode = mode;
     	this.gui = gui;
     	this.dataLink = dataLink;
+    	this.saveFile = saveFile;
 		t0 = System.currentTimeMillis();
 		powerData = new ArrayList<PowerData>();
 		rawData = new ArrayList<Integer>();
@@ -45,11 +46,11 @@ public class MindFlexReader {
     
 
 	void readData() throws IOException {
-		FileOutputStream out;
-		if (DUMP) {
-			File f = new File("data.bin");
-			f.delete();
-			out = new FileOutputStream(f);
+		FileOutputStream out = null;
+		if (saveFile != null) {
+			saveFile.delete();
+			saveFile.createNewFile();
+			out = new FileOutputStream(saveFile);
 		}
 		byte[] buffer = new byte[0];
 
@@ -83,12 +84,11 @@ public class MindFlexReader {
 		
 		t0 = System.currentTimeMillis();
 
-		while (!done && dataLink != null && 
-				(!DUMP || System.currentTimeMillis() - t0 < 30000) ) {
+		while (!done && dataLink != null) {
 			try {
 				byte[] data = dataLink.receiveBytes();
 				if (data != null) {
-					if (DUMP)
+					if (out != null)
 						out.write(data);
 					buffer = concat(buffer, data);
 	
@@ -129,6 +129,8 @@ public class MindFlexReader {
 			dataLink.stop();
 			dataLink = null;
 		}
+		if (out != null)
+			out.close();
 		if (gui!=null)
 			gui.terminate();
 	}

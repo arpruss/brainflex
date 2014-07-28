@@ -1,6 +1,7 @@
 package mobi.omegacentauri.brainflex;
 
 import java.awt.Checkbox;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.TextField;
@@ -12,23 +13,30 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.TextEvent;
 import java.awt.event.TextListener;
+import java.io.File;
 import java.util.prefs.Preferences;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRootPane;
+import javax.swing.LookAndFeel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileFilter;
 
 public class Options extends JFrame {
 	private static final long serialVersionUID = 4138326933073169336L;
 	Preferences prefs;
+	protected File saveFile;
 	
 	public Options() {
 		super();
+		
+		saveFile = null;
 		
 		prefs = Preferences.userNodeForPackage(BrainFlex.class);
 		
@@ -125,7 +133,7 @@ public class Options extends JFrame {
 			public void actionPerformed(ActionEvent arg0) {
 				if (powerCheck.getState() || rawCheck.getState()) {
 					Options.this.dispose();
-					new BrainFlex(comPortField.getText());
+					new BrainFlex(comPortField.getText(), saveFile);
 				}
 			}
 		});
@@ -134,6 +142,40 @@ public class Options extends JFrame {
 		root.setDefaultButton(go);
 		
 		buttonPanel.add(go);
+		
+		final JButton saveData = new JButton("Sava data: (none)");
+		saveData.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				final JFileChooser fc = new JFileChooser();
+				fc.setFileFilter(new FileFilter() {
+
+					@Override
+					public boolean accept(File arg0) {
+						if (arg0.isDirectory())
+							return false;
+						return arg0.getName().endsWith(".thinkgear");
+					}
+
+					@Override
+					public String getDescription() {
+						return "*.thinkgear";
+					}});
+				
+				if (fc.showSaveDialog(saveData) == JFileChooser.APPROVE_OPTION) {
+					String n = fc.getSelectedFile().getPath();
+					if (! n.endsWith(".thinkgear"))
+						n += ".thinkgear";
+					Options.this.saveFile = new File(n);
+					saveData.setText("Save data: "+Options.this.saveFile.getName());
+				}
+				else 
+					saveData.setText("Save data: (none)");
+			}
+		});
+		
+		buttonPanel.add(saveData);
 		
 		JButton cancel = new JButton("Cancel");
 		cancel.addActionListener(new ActionListener() {
@@ -260,7 +302,7 @@ public class Options extends JFrame {
 				public void actionPerformed(ActionEvent arg0) {
 					if (powerCheck.getState() || rawCheck.getState()) {
 						Options.this.dispose();
-						new BrainFlex(comPortField.getText());
+						new BrainFlex(comPortField.getText(), saveFile);
 					}
 				}
 			});

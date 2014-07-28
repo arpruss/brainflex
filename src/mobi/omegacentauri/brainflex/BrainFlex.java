@@ -7,6 +7,7 @@
 
 package mobi.omegacentauri.brainflex;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.prefs.Preferences;
 
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
 
 public class BrainFlex implements BrainFlexGUI {
 	private List<Mark> marks;
@@ -29,7 +31,7 @@ public class BrainFlex implements BrainFlexGUI {
 	public int mode;
 	LogWindow logWindow;
 
-	public BrainFlex(final String comPort) {
+	public BrainFlex(final String comPort, File saveFile) {
 		Preferences pref = Preferences.userNodeForPackage(BrainFlex.class);
 		
 		if (pref.getBoolean(PREF_LOG_WINDOW, true)) {
@@ -56,7 +58,7 @@ public class BrainFlex implements BrainFlexGUI {
 			mode = MindFlexReader.MODE_NORMAL;
 		}
 
-		mfr = new MindFlexReader(this, dataLink, mode);
+		mfr = new MindFlexReader(this, dataLink, mode, saveFile);
 		marks = new ArrayList<Mark>();
 		
 		windows = new LinkedList<ViewerWindow>();
@@ -136,6 +138,13 @@ public class BrainFlex implements BrainFlexGUI {
 			System.out.println("Done");
 		}
 		else {
+		    try {
+		        UIManager.setLookAndFeel(
+		            UIManager.getSystemLookAndFeelClassName());
+		    }
+		    catch (Exception e) {
+		    	
+		    }
 			new Options();
 		}
 	}
