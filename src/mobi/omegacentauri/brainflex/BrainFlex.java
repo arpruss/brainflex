@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 import javax.swing.JOptionPane;
 
@@ -20,15 +21,28 @@ public class BrainFlex implements BrainFlexGUI {
 	private List<ViewerWindow> windows;
 	MindFlexReader mfr;
     static final private boolean rawDump = false;
-	private boolean customBrainlinkFW = true; // use only with the custom firmware from https://github.com/arpruss/brainflex
-    int mode = MindFlexReader.MODE_RAW;
+	static final String PREF_SERIAL_PORT = "serialPort";
+	public static final String PREF_RAW = "raw";
+	public static final String PREF_POWER = "power";
+	public static final String PREF_CUSTOM_FW = "customFW";
+	public int mode;
 
 	public BrainFlex(final String comPort) {
-		DataLink dataLink = customBrainlinkFW ? new BrainLinkBridgeSerialLink(comPort) : new BrainLinkSerialLinkLL(comPort); 
-		//DataLink dataLink = new FileDataLink(comPort);
+		Preferences pref = Preferences.userNodeForPackage(BrainFlex.class);
+		
+		DataLink dataLink = pref.getBoolean(PREF_CUSTOM_FW, false) ? 
+				new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null)) : 
+					new BrainLinkSerialLinkLL(pref.get(PREF_SERIAL_PORT, null)); 
 		if (! dataLink.isValid()) {
 			mfr = null;
 			return;
+		}
+		
+		if (pref.getBoolean(PREF_RAW, true)) {
+			mode = MindFlexReader.MODE_RAW;
+		}
+		else {
+			mode = MindFlexReader.MODE_NORMAL;
 		}
 
 		mfr = new MindFlexReader(this, dataLink, mode);
@@ -36,13 +50,11 @@ public class BrainFlex implements BrainFlexGUI {
 		
 		windows = new LinkedList<ViewerWindow>();
 		
-		if (mode == MindFlexReader.MODE_RAW) {
+		if (pref.getBoolean(PREF_POWER, true))
 			windows.add(new ViewerWindow(this, false));
+
+		if (pref.getBoolean(PREF_RAW, true))
 			windows.add(new ViewerWindow(this, true));
-		}
-		else {
-			windows.add(new ViewerWindow(this, false));
-		}
 				
 		Thread reader = new Thread() {
 			@Override 
@@ -85,15 +97,18 @@ public class BrainFlex implements BrainFlexGUI {
 		}
 	}
 	
-	public static void main(final String[] args) throws Exception
+	public static void main(final String[] args) throws Exception 
 	{
-		final String comPort = JOptionPane.showInputDialog(null, "Brainlink serial port?");
-		if (comPort == null)
-			return;
-
 		if (rawDump) {
+			Preferences prefs = Preferences.userNodeForPackage(BrainFlex.class);
 			DataLink dataLink;
 			FileOutputStream o = new FileOutputStream("data.raw");
+
+			final String comPort = JOptionPane.showInputDialog(null, "Brainlink serial port?", 
+					prefs.get(PREF_SERIAL_PORT, ""));
+			if (comPort == null)
+				return;
+			prefs.put(PREF_SERIAL_PORT, comPort);
 
 			dataLink = new BrainLinkBridgeSerialLink(comPort); 
 			dataLink.preStart(9600, new byte[] { MindFlexReader.MODE_RAW });
@@ -110,7 +125,7 @@ public class BrainFlex implements BrainFlexGUI {
 			System.out.println("Done");
 		}
 		else {
-			new BrainFlex(comPort);
+			new Options();
 		}
 	}
 
