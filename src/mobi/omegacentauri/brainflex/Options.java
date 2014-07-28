@@ -155,18 +155,18 @@ public class Options extends JFrame {
 					public boolean accept(File arg0) {
 						if (arg0.isDirectory())
 							return false;
-						return arg0.getName().endsWith(".thinkgear");
+						return arg0.getName().endsWith(".thg");
 					}
 
 					@Override
 					public String getDescription() {
-						return "*.thinkgear";
+						return "*.thg";
 					}});
 				
 				if (fc.showSaveDialog(saveData) == JFileChooser.APPROVE_OPTION) {
 					String n = fc.getSelectedFile().getPath();
-					if (! n.endsWith(".thinkgear"))
-						n += ".thinkgear";
+					if (! n.endsWith(".thg"))
+						n += ".thg";
 					Options.this.saveFile = new File(n);
 					saveData.setText("Save data: "+Options.this.saveFile.getName());
 				}
