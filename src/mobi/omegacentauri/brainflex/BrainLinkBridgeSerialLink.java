@@ -26,21 +26,11 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 	private static final byte[] BAUD38400 = { '*', 'C', 0, (byte)(204&0xFF), -2 };
 
 	private SerialPort p;
-	private boolean valid;
 
-	public BrainLinkBridgeSerialLink(String port) {
-		valid = false;
-		try {
-			System.out.println("Opening "+port);
-			p = new SerialPort(port);
-			if (! p.openPort())
-				throw(new IOException("Cannot open "+p.getPortName()));
-			System.out.println("Opened port "+p.getPortName());
-			valid = true;
-		} catch (Exception e) {
-			System.err.println("Ooops "+e);
-			System.exit(1);
-		}
+	public BrainLinkBridgeSerialLink(String port) throws Exception {
+		p = new SerialPort(port);
+		if (! p.openPort())
+			throw(new IOException("Cannot open "+p.getPortName()));
 	}
 
 	public void start(int baud) {
@@ -124,10 +114,6 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 		}		
 	}
 	
-	public boolean isValid() {
-		return valid;
-	}
-
 	@Override
 	public int getFixedBaud() {
 		return 0;

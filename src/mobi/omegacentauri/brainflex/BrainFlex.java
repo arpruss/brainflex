@@ -25,19 +25,30 @@ public class BrainFlex implements BrainFlexGUI {
 	public static final String PREF_RAW = "raw";
 	public static final String PREF_POWER = "power";
 	public static final String PREF_CUSTOM_FW = "customFW";
+	public static final String PREF_LOG_WINDOW = "logWindow";
 	public int mode;
+	LogWindow logWindow;
 
 	public BrainFlex(final String comPort) {
 		Preferences pref = Preferences.userNodeForPackage(BrainFlex.class);
 		
-		DataLink dataLink = pref.getBoolean(PREF_CUSTOM_FW, false) ? 
-				new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null)) : 
-					new BrainLinkSerialLinkLL(pref.get(PREF_SERIAL_PORT, null)); 
-		if (! dataLink.isValid()) {
+		if (pref.getBoolean(PREF_LOG_WINDOW, true)) {
+			logWindow = new LogWindow();
+		}
+		
+		DataLink dataLink;
+
+		try {
+			dataLink = pref.getBoolean(PREF_CUSTOM_FW, false) ? 
+					new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null)) : 
+						new BrainLinkSerialLinkLL(pref.get(PREF_SERIAL_PORT, null)); 
+		}
+		catch(Exception e) {
+			log(""+e);
 			mfr = null;
 			return;
 		}
-		
+
 		if (pref.getBoolean(PREF_RAW, true)) {
 			mode = MindFlexReader.MODE_RAW;
 		}
@@ -159,5 +170,10 @@ public class BrainFlex implements BrainFlexGUI {
 		}
 		if (windows.size() == 0)
 			mfr.disconnect();
+	}
+	
+	public void log(String s) {
+		if (logWindow != null && s != null)
+			logWindow.log(s);
 	}
 }

@@ -38,8 +38,6 @@ public abstract class DataLink {
 		transmitFakeBaud(baud, data);
 	}
 
-	public abstract boolean isValid();
-	
 	// fakes a transmission at a lower baud rate
 	// assume 8N1
 	public void transmitFakeBaud(int fakeBaud, byte... data) {

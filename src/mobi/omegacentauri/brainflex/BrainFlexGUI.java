@@ -10,6 +10,7 @@ public interface BrainFlexGUI {
 	List<Integer> getRawDataCopy();
 	List<Mark> getMarksCopy();
 	MindFlexReader getMindFlexReader();
+	void log(String s);
 	
 	public class Mark {
 		int t;

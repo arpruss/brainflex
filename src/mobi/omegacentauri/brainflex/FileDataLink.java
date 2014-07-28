@@ -12,17 +12,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class FileDataLink extends DataLink {
-	 private FileInputStream in;
-	 public final int BUFFER_SIZE = 7;
+	private FileInputStream in;
+	public final int BUFFER_SIZE = 512;
 
-	public FileDataLink(String s) {
-		 try {
-			in = new FileInputStream(s);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	 }
+	public FileDataLink(String s) throws Exception {
+		in = new FileInputStream(s);
+	}
 
 	public byte[] receiveBytes() {
 		byte[] buff = new byte[BUFFER_SIZE];

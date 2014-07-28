@@ -27,23 +27,14 @@ public class BrainLinkSerialLinkLL extends DataLink {
 	private static final byte[] BAUD38400 = { '*', 'C', 0, (byte)(204&0xFF), -2 };
 
 	private SerialPort p;
-	private boolean valid;
 
-	public BrainLinkSerialLinkLL(String port) {
+	public BrainLinkSerialLinkLL(String port) throws Exception {
 //		CommPortIdentifier id;
-		valid = false;
-		try {
-			System.out.println("Opening "+port);
-			p = new SerialPort(port);
-			if (! p.openPort())
-				throw(new IOException("Cannot open "+p.getPortName()));
-			System.out.println("Opened port "+p.getPortName());
-			p.writeByte((byte)'*');
-			valid = true;
-		} catch (Exception e) {
-			System.err.println("Ooops "+e);
-			System.exit(1);
-		}
+		p = new SerialPort(port);
+		if (! p.openPort())
+			throw(new IOException("Cannot open "+p.getPortName()));
+		System.out.println("Opened port "+p.getPortName());
+		p.writeByte((byte)'*');
 	}
 	
 	private void setBaud(int baud) {
@@ -154,10 +145,6 @@ public class BrainLinkSerialLinkLL extends DataLink {
 		receiveBytes();
 	}
 	
-	public boolean isValid() {
-		return valid;
-	}
-
 	@Override
 	public int getFixedBaud() {
 		return 0;
