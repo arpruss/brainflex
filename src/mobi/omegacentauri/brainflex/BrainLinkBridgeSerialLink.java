@@ -29,8 +29,18 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 
 	public BrainLinkBridgeSerialLink(String port) throws Exception {
 		p = new SerialPort(port);
-		if (! p.openPort())
-			throw(new IOException("Cannot open "+p.getPortName()));
+		
+		int busyTries = 3;
+
+		while (busyTries-- > 0 && ! p.isOpened()) {
+			try {
+				p.openPort();
+			}
+			catch (SerialPortException e) {
+				if (busyTries <= 0 || ! e.getExceptionType().equals(SerialPortException.TYPE_PORT_BUSY)) 
+					throw e;
+			}
+		}
 	}
 
 	public void start(int baud) {
