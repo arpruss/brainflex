@@ -6,6 +6,7 @@ import javax.swing.JTextArea;
 import javax.swing.text.DefaultCaret;
 
 public class LogWindow extends JFrame {
+	private static final long serialVersionUID = 1700923833341394306L;
 	private JTextArea textArea;
 
 	public LogWindow() {

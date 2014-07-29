@@ -44,6 +44,7 @@ public class BrainFlex implements BrainFlexGUI {
 			dataLink = pref.getBoolean(PREF_CUSTOM_FW, false) ? 
 					new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null)) : 
 						new BrainLinkSerialLinkLL(pref.get(PREF_SERIAL_PORT, null)); 
+			log(dataLink.getClass().toString());
 		}
 		catch(Exception e) {
 			log(""+e);

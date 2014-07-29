@@ -30,7 +30,6 @@ public class MindFlexReader {
 	private BrainFlexGUI gui;
 	private int mode;
 	private File saveFile;
-	static private final boolean LOG = false;
 
     public MindFlexReader(BrainFlexGUI gui, DataLink dataLink, int mode, File saveFile) {
     	this.mode = mode;
