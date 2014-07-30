@@ -7,23 +7,23 @@ import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.transform.DftNormalization;
-import org.apache.commons.math3.transform.FastFourierTransformer;
-import org.apache.commons.math3.transform.TransformType;
+//import org.apache.commons.math3.complex.Complex;
+//import org.apache.commons.math3.transform.DftNormalization;
+//import org.apache.commons.math3.transform.FastFourierTransformer;
+//import org.apache.commons.math3.transform.TransformType;
 
 import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
 
 public class RawGraphPanel extends GraphPanel {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 8739434584974120909L;
 	private static final int RAW_PER_SECOND = 515; // what an odd number!  Why not 512?
 	public static final int VISIBLE = RAW_PER_SECOND * 3;
 	private static final int WINDOW = 512;  // must be divisible by 2
 	private static final double FIDELITY = 0.1;
-	private boolean filter = false;
+//	private boolean filter = false;
 	private FastFourierTransformer fft;
 //	private double primaryFreq;
 
@@ -50,7 +50,7 @@ public class RawGraphPanel extends GraphPanel {
 		if (n<2)
 			return;
 
-		data = filter(data, n);
+	//	data = filter(data, n);
 
 		calculateTSize(s, n-1, w.scale * VISIBLE, 16., 1.);
 
@@ -65,7 +65,7 @@ public class RawGraphPanel extends GraphPanel {
 			else if (-y > ySize)
 				ySize = -y;
 		}
-		
+
 		ySize *= 2.2;
 		
 		if (ySize < 0)
@@ -88,31 +88,31 @@ public class RawGraphPanel extends GraphPanel {
 
 		for (int i=(int)startT; i<max; i++) {
 			int d1 = data.get(i);
-			if (0<i) { 
+			if (0<i) {
 				scaledLine(g2, i-1, ySize / 2 - d0, i, ySize / 2 - d1, 0);
 			}
 			d0 = d1;
-		}		
+		}
 	}
-
+        /*
 	private List<Integer> filter(List<Integer> data, int n) {
 		if (!filter)
 			return data;
-		
+
 		List<Integer> out = new ArrayList<Integer>();
-		
+
 		if (n % WINDOW != 0) {
-			addFilteredWindow(data, 0, n % WINDOW, out);			
+			addFilteredWindow(data, 0, n % WINDOW, out);
 		}
 		for (int i = n % WINDOW; i < n; i += WINDOW) {
 			addFilteredWindow(data, i, WINDOW, out);
 		}
-				
+
 		return out;
 	}
 
 	// count must be less than WINDOW
-	private void addFilteredWindow(List<Integer> in, int start, int count, List<Integer> out) {		
+	private void addFilteredWindow(List<Integer> in, int start, int count, List<Integer> out) {
 		double[] signal = new double[WINDOW];
 
 		for (int j = 0 ; j < WINDOW ; j++) {
@@ -124,12 +124,13 @@ public class RawGraphPanel extends GraphPanel {
 		Complex[] trans = fft.transform(signal, TransformType.FORWARD);
 //		for (int j = 0 ; j < (int)(WINDOW * FIDELITY) ; j++)
 //			trans[j] = new Complex(trans[j].getReal() * trans[j].getReal() + trans[j].getImaginary() * trans[j].getImaginary());
-		
-		for (int j = (int)(WINDOW * FIDELITY) ; j < WINDOW ; j++) 
+
+		for (int j = (int)(WINDOW * FIDELITY) ; j < WINDOW ; j++)
 			trans[j] = new Complex(0);
 		trans = fft.transform(trans, TransformType.INVERSE);
 
 		for (int j=0; j < count; j++)
 			out.add((int)trans[j].getReal());
-	}	
+	}
+	*/
 }
