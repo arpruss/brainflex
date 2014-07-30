@@ -13,9 +13,21 @@ import java.io.IOException;
 public class FileDataLink extends DataLink {
 	private FileInputStream in;
 	public final int BUFFER_SIZE = 512;
+	public boolean eof;
 
 	public FileDataLink(String s) throws Exception {
 		in = new FileInputStream(s);
+		eof = false;
+	}
+	
+	@Override 
+	public boolean isRealTime() {
+		return false;
+	}
+	
+	@Override
+	public boolean eof() {
+		return eof;
 	}
 
 	public byte[] receiveBytes() {
@@ -24,12 +36,13 @@ public class FileDataLink extends DataLink {
 		try {
 			size = in.read(buff);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			eof = true;
 			return null;
 		}
-		if (size <= 0)
+		if (size <= 0) {
+			eof = true;
 			return null;
+		}
 		if (size < BUFFER_SIZE) {
 			byte[] b2 = new byte[size];
 			System.arraycopy(buff, 0, b2, 0, size);

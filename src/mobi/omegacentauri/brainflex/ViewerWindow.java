@@ -49,38 +49,6 @@ public class ViewerWindow extends JFrame {
 			data = mfr.powerData;
 		}
 		
-		addWindowListener(new WindowListener() {
-			
-			@Override
-			public void windowOpened(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowIconified(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowDeiconified(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowDeactivated(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowClosing(WindowEvent e) {
-				ViewerWindow.this.bf.closing(ViewerWindow.this);
-			}
-			
-			@Override
-			public void windowClosed(WindowEvent e) {
-			}
-			
-			@Override
-			public void windowActivated(WindowEvent e) {
-			}
-		});
-		
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 
 		scrollBar = new JScrollBar(JScrollBar.HORIZONTAL);		

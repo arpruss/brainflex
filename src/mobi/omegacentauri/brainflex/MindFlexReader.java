@@ -30,6 +30,7 @@ public class MindFlexReader {
 	private BrainFlexGUI gui;
 	private int mode;
 	private File saveFile;
+	private Thread dataReadThread = null;
 
     public MindFlexReader(BrainFlexGUI gui, DataLink dataLink, int mode, File saveFile) {
     	this.mode = mode;
@@ -45,6 +46,7 @@ public class MindFlexReader {
     
 
 	void readData() throws IOException {
+		dataReadThread = Thread.currentThread();
 		FileOutputStream out = null;
 		if (saveFile != null) {
 			saveFile.delete();
@@ -83,7 +85,7 @@ public class MindFlexReader {
 		
 		t0 = System.currentTimeMillis();
 
-		while (!done && dataLink != null) {
+		while (!done && !dataLink.eof()) {
 			try {
 				byte[] data = dataLink.receiveBytes();
 				if (data != null) {
@@ -119,11 +121,27 @@ public class MindFlexReader {
 			}
 		} 
 
-		gui.log("Terminated");
+		gui.log("Final update");
+		if (gui != null)
+			gui.updateGraphs();
+
 		if (curPowerData != null) {
 			gui.log("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
 			gui.log("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
 		}
+
+		if (!done) {
+			gui.log("End of data");
+			while(!done) {
+				try {
+					Thread.sleep(60000);
+				}
+				catch(InterruptedException e) {
+					break;
+				}
+			}
+		}
+		gui.log("Terminated");
 		if (dataLink != null) {
 			dataLink.stop();
 			dataLink = null;
@@ -159,7 +177,7 @@ public class MindFlexReader {
 				gui.log("TIME "+curPowerData.t);
 			}
 		}
-		if (System.currentTimeMillis() - lastPaintTime > 250) {
+		if (dataLink.isRealTime() && System.currentTimeMillis() - lastPaintTime > 250) {
 			lastPaintTime = System.currentTimeMillis();
 			gui.updateGraphs();
 		}
@@ -348,14 +366,13 @@ public class MindFlexReader {
 	
 	public void stop() {
 		done = true;
-	}
-
-	public void disconnect() {
 		synchronized(dataLink) {
 			if (dataLink != null) {
 				dataLink.stop();
 				dataLink = null;
 			}
 		}
+		if (dataReadThread != null)
+			dataReadThread.interrupt();
 	}
 }

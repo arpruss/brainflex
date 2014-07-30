@@ -7,6 +7,8 @@
 
 package mobi.omegacentauri.brainflex;
 
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -15,35 +17,47 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.prefs.Preferences;
 
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
 public class BrainFlex implements BrainFlexGUI {
 	private List<Mark> marks;
-	private List<ViewerWindow> windows;
+	private List<JFrame> windows;
 	MindFlexReader mfr;
     static final private boolean rawDump = false;
-	static final String PREF_SERIAL_PORT = "serialPort";
+	public static final String PREF_SERIAL_PORT = "serialPort";
 	public static final String PREF_RAW = "raw";
 	public static final String PREF_POWER = "power";
 	public static final String PREF_CUSTOM_FW = "customFW";
 	public static final String PREF_LOG_WINDOW = "logWindow";
+	public static final String PREF_FILE_MODE = "inFile";
+	public static final String PREF_FILE_NAME = "fileName";
+	public static final String PREF_SAVE_BINARY = "saveBinary";
 	public int mode;
 	LogWindow logWindow;
 
-	public BrainFlex(final String comPort, File saveFile) {
+	public BrainFlex(File saveFile) {
 		Preferences pref = Preferences.userNodeForPackage(BrainFlex.class);
-		
+		windows = new LinkedList<JFrame>();
+				
 		if (pref.getBoolean(PREF_LOG_WINDOW, true)) {
 			logWindow = new LogWindow();
+			windows.add(logWindow);
 		}
 		
 		DataLink dataLink;
 
 		try {
-			dataLink = pref.getBoolean(PREF_CUSTOM_FW, false) ? 
-					new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null)) : 
-						new BrainLinkSerialLinkLL(pref.get(PREF_SERIAL_PORT, null)); 
+			if (pref.getBoolean(PREF_FILE_MODE, false)) {
+				dataLink = new FileDataLink(pref.get(PREF_FILE_NAME, null));
+			}
+			else if (pref.getBoolean(PREF_CUSTOM_FW, false)) { 
+				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));
+			}
+			else {
+				dataLink = new BrainLinkSerialLinkLL(pref.get(PREF_SERIAL_PORT, null));
+			}
 			log(dataLink.getClass().toString());
 		}
 		catch(Exception e) {
@@ -61,8 +75,6 @@ public class BrainFlex implements BrainFlexGUI {
 
 		mfr = new MindFlexReader(this, dataLink, mode, saveFile);
 		marks = new ArrayList<Mark>();
-		
-		windows = new LinkedList<ViewerWindow>();
 		
 		if (pref.getBoolean(PREF_POWER, true))
 			windows.add(new ViewerWindow(this, false));
@@ -84,8 +96,52 @@ public class BrainFlex implements BrainFlexGUI {
 			reader.setPriority(Thread.MAX_PRIORITY);
 		}
 		catch(Exception e) {
-			System.err.println("Cannot set max priority for reader thread.");
+			log("Cannot set max priority for reader thread.");
 		}
+		
+		for (final JFrame w : windows) {
+			w.addWindowListener(new WindowListener() {
+				
+				@Override
+				public void windowOpened(WindowEvent arg0) {
+				}
+				
+				@Override
+				public void windowIconified(WindowEvent arg0) {
+				}
+				
+				@Override
+				public void windowDeiconified(WindowEvent arg0) {
+				}
+				
+				@Override
+				public void windowDeactivated(WindowEvent arg0) {
+				}
+				
+				@Override
+				public void windowClosing(WindowEvent arg0) {
+					windows.remove(w);
+					if (windows.size() == 0) {
+						if (mfr != null) {
+							mfr.stop();
+						}
+					}
+				}
+				
+				@Override
+				public void windowClosed(WindowEvent arg0) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+				@Override
+				public void windowActivated(WindowEvent arg0) {
+					// TODO Auto-generated method stub
+					
+				}
+			});
+		}
+		
 		reader.start();
 	}
 	
@@ -151,14 +207,18 @@ public class BrainFlex implements BrainFlexGUI {
 	}
 
 	public void updateGraphs() {
-		for (ViewerWindow w: windows) {
-			w.updateGraph();
+		for (JFrame w: windows) {
+			if (w.getType().equals(ViewerWindow.class)) {
+				((ViewerWindow)w).updateGraph();
+			}
 		}
 	}
 	
+	// This assumes the MindFlexReader instance has already terminated.
 	public void terminate() {
-		for (ViewerWindow w: windows)
+		for (JFrame w: windows)
 			w.dispose();
+		System.exit(0);
 	}
 	
 	@Override
@@ -172,16 +232,16 @@ public class BrainFlex implements BrainFlexGUI {
 		}		
 	}
 
-	public void closing(ViewerWindow toClose) {
-		for (ViewerWindow w: windows) {
-			if (w == toClose) {
-				windows.remove(w);
-			}
-		}
-		if (windows.size() == 0)
-			mfr.disconnect();
-	}
-	
+//	public void closing(ViewerWindow toClose) {
+//		for (JFrame w: windows) {
+//			if (w == toClose) {
+//				windows.remove(w);
+//			}
+//		}
+//		if (windows.size() == 0)
+//			mfr.stop();
+//	}
+
 	public void log(String s) {
 		if (logWindow != null && s != null)
 			logWindow.log(s);

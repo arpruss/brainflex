@@ -68,4 +68,12 @@ public abstract class DataLink {
 		else
 			out[bit/10] &= ~(1 << (( bit % 10) - 1));
 	}
+
+	public boolean eof() {
+		return false;
+	}
+	
+	public boolean isRealTime() {
+		return true;
+	}
 }
