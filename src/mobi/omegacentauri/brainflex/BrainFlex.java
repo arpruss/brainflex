@@ -34,6 +34,7 @@ public class BrainFlex implements BrainFlexGUI {
 	public static final String PREF_FILE_MODE = "inFile";
 	public static final String PREF_FILE_NAME = "fileName";
 	public static final String PREF_SAVE_BINARY = "saveBinary";
+	public static final String PREF_HEART_MODE = "ecg";
 	public int mode;
 	LogWindow logWindow;
 
@@ -66,7 +67,7 @@ public class BrainFlex implements BrainFlexGUI {
 			return;
 		}
 
-		if (pref.getBoolean(PREF_RAW, true)) {
+		if (pref.getBoolean(PREF_RAW, true) || pref.getBoolean(PREF_HEART_MODE, false)) {
 			mode = MindFlexReader.MODE_RAW;
 		}
 		else {
@@ -76,10 +77,10 @@ public class BrainFlex implements BrainFlexGUI {
 		mfr = new MindFlexReader(this, dataLink, mode, saveFile);
 		marks = new ArrayList<Mark>();
 		
-		if (pref.getBoolean(PREF_POWER, true))
+		if (!pref.getBoolean(PREF_HEART_MODE, false) && pref.getBoolean(PREF_POWER, true))
 			windows.add(new ViewerWindow(this, false));
 
-		if (pref.getBoolean(PREF_RAW, true))
+		if (pref.getBoolean(PREF_RAW, true) || pref.getBoolean(PREF_HEART_MODE, false))
 			windows.add(new ViewerWindow(this, true));
 				
 		Thread reader = new Thread() {

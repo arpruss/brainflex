@@ -42,7 +42,7 @@ public class Options extends JFrame {
 		setLocationByPlatform(true);
 		
 		setTitle("BrainFlex Options");
-		setSize(640,200);
+		setSize(640,220);
 
 		Container pane = getContentPane();
 		pane.setLayout(new BoxLayout(pane, BoxLayout.Y_AXIS));
@@ -79,6 +79,8 @@ public class Options extends JFrame {
 		
 		final JLabel notes = new JLabel(" ", SwingConstants.LEFT);
 
+		final Checkbox heartCheck = new Checkbox("Heart mode", prefs.getBoolean(BrainFlex.PREF_HEART_MODE, false));
+		
 		final Checkbox rawCheck = new Checkbox("Raw data window", prefs.getBoolean(BrainFlex.PREF_RAW, true));
 		
 		final Checkbox powerCheck = new Checkbox("Processed data window", prefs.getBoolean(BrainFlex.PREF_POWER, true));
@@ -92,7 +94,7 @@ public class Options extends JFrame {
 					prefs.flush();
 				} catch (BackingStoreException e) {
 				}
-				updateNotes(notes,rawCheck,powerCheck);
+				updateNotes(notes,heartCheck,rawCheck,powerCheck);
 			}
 		});
 		
@@ -105,11 +107,21 @@ public class Options extends JFrame {
 					prefs.flush();
 				} catch (BackingStoreException e) {
 				}
-				updateNotes(notes,rawCheck,powerCheck);
+				updateNotes(notes,heartCheck,rawCheck,powerCheck);
 			}
 		});
 
-		updateNotes(notes,rawCheck,powerCheck);
+		heartCheck.addItemListener(new ItemListener() {
+			
+			@Override
+			public void itemStateChanged(ItemEvent arg0) {
+				prefs.putBoolean(BrainFlex.PREF_HEART_MODE, heartCheck.getState());
+				flushPrefs();
+				updateNotes(notes,heartCheck,rawCheck,powerCheck);
+			}
+		});
+		
+		updateNotes(notes,heartCheck,rawCheck,powerCheck);
 
 		final Checkbox logCheck = new Checkbox("Log window", prefs.getBoolean(BrainFlex.PREF_LOG_WINDOW, true));
 		
@@ -259,6 +271,7 @@ public class Options extends JFrame {
 		buttonPanel.add(notes);
 		
 		pane.add(comPortBox);
+		pane.add(heartCheck);
 		pane.add(rawCheck);
 		pane.add(powerCheck);
 		pane.add(logCheck);
@@ -290,14 +303,16 @@ public class Options extends JFrame {
 		setVisible(true);
 	}
 
-	protected void updateNotes(JLabel notes, Checkbox rawCheck,
+	protected void updateNotes(JLabel notes, Checkbox heartCheck, Checkbox rawCheck,
 			Checkbox powerCheck) {
-		if (!rawCheck.getState() && !powerCheck.getState()) {
+		if (!heartCheck.getState() && !rawCheck.getState() && !powerCheck.getState()) {
 			notes.setText("At least one data window needs to be active.");
 		}
 		else {
 			notes.setText("");
 		}
+		rawCheck.setEnabled(!heartCheck.getState());
+		powerCheck.setEnabled(!heartCheck.getState());
 	}
 	
 	public void flushPrefs() {
