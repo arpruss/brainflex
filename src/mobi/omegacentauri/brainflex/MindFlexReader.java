@@ -25,6 +25,8 @@ public class MindFlexReader {
 	public static final int MODE_NORMAL = 0;
 	public static final int MODE_RAW = 0x02; // 0x02;
     public boolean done;
+    static final int RAW_PER_SECOND = 515; // why not 512??!
+    private static final double PROCESSED_PER_SECOND = RAW_PER_SECOND / 512.;
 	
 	private DataLink dataLink;
 	private BrainFlexGUI gui;
@@ -121,13 +123,14 @@ public class MindFlexReader {
 			}
 		} 
 
-		gui.log("Final update");
-		if (gui != null)
+		if (gui != null) {
 			gui.updateGraphs();
+		}
 
 		if (curPowerData != null) {
 			gui.log("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
 			gui.log("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
+			gui.log("Received "+badPacketCount+" bad packets over "+curPowerData.t/1000.+" sec: "+(1000.*badPacketCount/curPowerData.t)+"/sec");
 		}
 
 		if (!done) {
@@ -166,13 +169,12 @@ public class MindFlexReader {
 			synchronized(rawData) {
 				rawData.add(curRaw);
 			}
-//				if (rawData.size() % 10000 == 0) {
-//					System.out.println("Have "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t));
-//				}
 		}
 
 		if (lastSignal < 50 && ( curPowerData.havePower || curPowerData.haveAttention || curPowerData.haveMeditation ) ) {
 			synchronized(powerData) {
+				if (! dataLink.isRealTime())
+					curPowerData.t = (int)(powerData.size() * PROCESSED_PER_SECOND);
 				powerData.add(curPowerData);
 				gui.log("TIME "+curPowerData.t);
 			}
@@ -180,6 +182,7 @@ public class MindFlexReader {
 		if (dataLink.isRealTime() && System.currentTimeMillis() - lastPaintTime > 250) {
 			lastPaintTime = System.currentTimeMillis();
 			gui.updateGraphs();
+			gui.log("Bad packets: "+badPacketCount);
 		}
 	}
 

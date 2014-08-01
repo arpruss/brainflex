@@ -22,8 +22,7 @@ public class RawGraphPanel extends GraphPanel {
 	 *
 	 */
 	private static final long serialVersionUID = 8739434584974120909L;
-	private static final int RAW_PER_SECOND = 515; // what an odd number!  Why not 512?
-	public static final int VISIBLE = RAW_PER_SECOND * 3;
+	public static final int VISIBLE = MindFlexReader.RAW_PER_SECOND * 3;
 	private static final int WINDOW = 512;  // must be divisible by 2
 	private static final double MAX_FREQ_PASS = 55; // Hz
 	private static final double MIN_FREQ_PASS = 0; // HZ
@@ -57,17 +56,14 @@ public class RawGraphPanel extends GraphPanel {
 		if (n<1)
 			return;
 		
-		w.setTime(n * 1000 / RAW_PER_SECOND, n, w.pause.point < 0 ? mfr.badPacketCount : w.pause.pausedBadPacketCount );
-				
-		if (n<2)
-			return;
-
 		calculateTSize(s, n-1, w.scale * VISIBLE, 16., 1.);
-
+		
 		int max = (int)endT;
 		if (n < max)
 			max = n;
 		
+		w.setTimeRange(startT * 1000 / MindFlexReader.RAW_PER_SECOND, (max-1) * 1000 / MindFlexReader.RAW_PER_SECOND);
+
 		data = filter(data, max);
 
 		double ySize = 0;
@@ -127,10 +123,10 @@ public class RawGraphPanel extends GraphPanel {
 			signal[i] = 0.;
 		
 		Complex[] trans = fft.transform(signal, TransformType.FORWARD);
-		int cutOff = (int) (HR_WINDOW * HR_MAX_FREQ_PASS / RAW_PER_SECOND);
+		int cutOff = (int) (HR_WINDOW * HR_MAX_FREQ_PASS / MindFlexReader.RAW_PER_SECOND);
 		for (int i = cutOff ; i < 2 * WINDOW ; i++)
 			trans[i] = new Complex(0.);
-		cutOff = (int)(HR_WINDOW * HR_MIN_FREQ_PASS / RAW_PER_SECOND);
+		cutOff = (int)(HR_WINDOW * HR_MIN_FREQ_PASS / MindFlexReader.RAW_PER_SECOND);
 		for (int i = 0 ; i < cutOff ; i++)
 			trans[i] = new Complex(0.);
 		
@@ -162,7 +158,7 @@ public class RawGraphPanel extends GraphPanel {
 		if (best.deviation > 0.25)
 			return -1;
 		
-		return 60 * RAW_PER_SECOND / best.averageLength;
+		return 60 * MindFlexReader.RAW_PER_SECOND / best.averageLength;
 	}
 
 	private List<Integer> filter(List<Integer> data, int n) {
@@ -193,13 +189,13 @@ public class RawGraphPanel extends GraphPanel {
 		}
 		Complex[] trans = fft.transform(signal, TransformType.FORWARD);
 		
-		int cutOff = (int) (WINDOW * MAX_FREQ_PASS / RAW_PER_SECOND);
+		int cutOff = (int) (WINDOW * MAX_FREQ_PASS / MindFlexReader.RAW_PER_SECOND);
 
 		int j;
 		for (j = cutOff ; j < WINDOW * 2 ; j++)
 			trans[j] = new Complex(0);
 		
-		cutOff = (int)(WINDOW * MIN_FREQ_PASS / RAW_PER_SECOND);
+		cutOff = (int)(WINDOW * MIN_FREQ_PASS / MindFlexReader.RAW_PER_SECOND);
 		
 		for (j=0; j < cutOff ; j++)
 			trans[j] = new Complex(0);

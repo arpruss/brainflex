@@ -24,7 +24,7 @@ public class ViewerWindow extends JFrame {
 	public JScrollBar scrollBar;
 	private final BrainFlex bf;
 	private final MindFlexReader mfr;
-	public JTextField timeText;
+	public JTextField timeInfo;
 	static final double MIN_SCALE = 1/16.;
 	static final double MAX_SCALE = 4.;
 	static final double SCALE_MULT = 1.5;
@@ -125,28 +125,29 @@ public class ViewerWindow extends JFrame {
 				repaint();
 			}
 		}); 	
-		timeText = new JTextField();
-		timeText.setEditable(false);
-		setTime(0, 0, 0);
-		Dimension m = timeText.getMaximumSize();
-		Dimension p = timeText.getPreferredSize();
+		timeInfo = new JTextField();
+		timeInfo.setEditable(false);
+//		setTime(0, 0, 0, 0);
+		Dimension m = timeInfo.getMaximumSize();
+		Dimension p = timeInfo.getPreferredSize();
 		m.height = p.height;
-		timeText.setMaximumSize(m);
+		timeInfo.setMaximumSize(m);
 
 		buttonPanel.add(plusButton);
 		buttonPanel.add(minusButton);
 		buttonPanel.add(pauseButton);
 		buttonPanel.add(markButton);
 		buttonPanel.add(exitButton);
-		buttonPanel.add(timeText);
+		buttonPanel.add(timeInfo);
 		
 		getContentPane().add(buttonPanel);
 		
 		setVisible(true);
 	}
 
-	public void setTime(int t, int c, int bad) {
-		timeText.setText(new DecimalFormat("0.000").format(t/1000.)+"s ("+c+" packets; "+bad+" bad packets)");
+	public void setTimeRange(double start, double end) {
+		final DecimalFormat df = new DecimalFormat("0.000"); 
+		timeInfo.setText(df.format(start/1000.)+"s - "+df.format(end/1000.)+"s");
 	}
 	
 	public class Pause {

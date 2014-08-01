@@ -209,7 +209,7 @@ public class BrainFlex implements BrainFlexGUI {
 
 	public void updateGraphs() {
 		for (JFrame w: windows) {
-			if (w.getType().equals(ViewerWindow.class)) {
+			if (w instanceof mobi.omegacentauri.brainflex.ViewerWindow) {
 				((ViewerWindow)w).updateGraph();
 			}
 		}

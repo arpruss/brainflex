@@ -2,6 +2,7 @@ package mobi.omegacentauri.brainflex;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
@@ -27,15 +28,9 @@ public class PowerGraphPanel extends GraphPanel {
 		int n = w.pause.point < 0 ? data.size() : w.pause.point;
 		if (n<1)
 			return;
-		int t = n > 0 ? data.get(n-1).t : 0;
-		
-		w.setTime(t, n, w.pause.point < 0 ? mfr.badPacketCount : w.pause.pausedBadPacketCount );
-
-		if (n<2)
-			return;
 
 		calculateTSize(s, (double)data.get(n-1).t, w.scale * VISIBLE, 1000., 1.);
-		
+
 		double ySize = 0;
 
 		for (int i=0; i<n; i++) 
@@ -63,20 +58,33 @@ public class PowerGraphPanel extends GraphPanel {
 			g2.draw(lin);
 		}
 		
+		g2.setColor(new Color(0f,0.5f,0f));
+		g2.setFont(new Font("default", Font.BOLD, 12));
 		for (int j = 0 ; j < MindFlexReader.POWER_NAMES.length ; j++) {
 			g2.drawChars(MindFlexReader.POWER_NAMES[j].toCharArray(), 0, MindFlexReader.POWER_NAMES[j].length(), 
-					0, (int)(j * subgraphHeight + ySize * .5 * yScale));
+					0, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
 		}
 		g2.drawChars("Attention".toCharArray(), 0, "Attention".length(), 
-				0, (int)(MindFlexReader.POWER_NAMES.length * subgraphHeight + ySize * .5 * yScale));
+				0, (int)(MindFlexReader.POWER_NAMES.length * subgraphHeight + ySize * .5 * yScale + 6));
 		g2.drawChars("Meditation".toCharArray(), 0, "Meditation".length(), 
-				0, (int)((1+MindFlexReader.POWER_NAMES.length) * subgraphHeight + ySize * .5 * yScale));
+				0, (int)((1+MindFlexReader.POWER_NAMES.length) * subgraphHeight + ySize * .5 * yScale + 6));
 
 		g2.setColor(Color.BLACK);
 		MindFlexReader.PowerData d0 = null;
 
+		int first = -1;
+		int last = -1;
+		
 		for (int i=0; i<n; i++) {
 			MindFlexReader.PowerData d1 = data.get(i);
+			if (first < 0 && startT <= d1.t)
+				first = d1.t;
+			if (last < 0 && (endT <= d1.t || i == n-1) ) {
+				if (d0 != null)
+					last = d0.t;
+				else
+					last = d1.t;					
+			}
 			if (0<i && startT <= d0.t && d1.t <= endT) { 
 				if (d0.havePower && d1.havePower) { 
 					for (int j=0; j<MindFlexReader.POWER_NAMES.length; j++) {
@@ -94,6 +102,8 @@ public class PowerGraphPanel extends GraphPanel {
 			}
 			d0 = d1;
 		}
+		
+		w.setTimeRange(first, last);
 	}
 	
 }
