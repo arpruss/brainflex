@@ -25,9 +25,17 @@ public class MindFlexReader {
 	public static final int MODE_NORMAL = 0;
 	public static final int MODE_RAW = 0x02; // 0x02;
     public boolean done;
-    static final int RAW_PER_SECOND = 515; // why not 512??!
+    // in MODE_RAW, the hardware sends 512 raw packets followed by one processed packet
+    // There are 515 raw packets received per second.
+    // I do not know if the sampling times for the raw packets are evenly spaced, or if 
+    // it there is a larger gap around the time the processed packet is sent.
+    // The timing in the code simply assumes that each incoming raw packet was sampled 
+    // 1/515th of a second after the preceding.
+    // There is a small chance that that it's 514 instead of 515--it's possible that I
+    // erroneously counted the processed packet along with the raw one. TODO!
+    static final int RAW_PER_SECOND = 515;
     private static final double PROCESSED_PER_SECOND = RAW_PER_SECOND / 512.;
-	
+
 	private DataLink dataLink;
 	private BrainFlexGUI gui;
 	private int mode;

@@ -40,6 +40,11 @@ public class BrainFlex implements BrainFlexGUI {
 
 	public BrainFlex(File saveFile) {
 		Preferences pref = Preferences.userNodeForPackage(BrainFlex.class);
+
+		JFrame mainWindow = new JFrame();
+		mainWindow.setSize(640, 480);
+		mainWindow.setVisible(true);
+		
 		windows = new LinkedList<JFrame>();
 				
 		if (pref.getBoolean(PREF_LOG_WINDOW, true)) {
@@ -75,6 +80,7 @@ public class BrainFlex implements BrainFlexGUI {
 		}
 
 		mfr = new MindFlexReader(this, dataLink, mode, saveFile);
+
 		marks = new ArrayList<Mark>();
 		
 		if (!pref.getBoolean(PREF_HEART_MODE, false) && pref.getBoolean(PREF_POWER, true))

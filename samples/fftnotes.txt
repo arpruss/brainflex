@@ -1,0 +1,9 @@
+Speculation on FFT data format:
+
+datarow 0xf1: initial Fourier transform value pair (once)
+datarow 0x82: rest of Fourier transform value pairs (255)
+
+Value pairs are presumably cosine/sine pairs.
+
+Timing suggests approximately one packet per second.  
+Or perhaps one packet per 515/512 seconds?

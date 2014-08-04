@@ -18,11 +18,13 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRootPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileFilter;
 
@@ -51,8 +53,8 @@ public class Options extends JFrame {
 //		comPortPanel.setLayout(new BoxLayout(comPortPanel, BoxLayout.X_AXIS));
 
 		final JComboBox<String> inMode = new JComboBox<String>();
-		inMode.addItem("Serial port");
-		inMode.addItem("Saved file");
+		inMode.addItem("Capture from serial port");
+		inMode.addItem("Load from saved file");
 
 //		JLabel label = new JLabel("Serial port: ");
 		comPortBox.add(inMode);
@@ -267,8 +269,20 @@ public class Options extends JFrame {
 			}
 		});
 		
+		JButton license = new JButton("License");
+		license.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				LicenseDialog ld = new LicenseDialog();
+				ld.setVisible(true);
+			}
+		});
+		
 		buttonPanel.add(cancel);
 		buttonPanel.add(notes);
+		buttonPanel.add(license);
+		
 		
 		pane.add(comPortBox);
 		pane.add(heartCheck);
