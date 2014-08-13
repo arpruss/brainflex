@@ -33,6 +33,7 @@ public class BrainLinkSerialLinkLL extends DataLink {
 		p = new SerialPort(port);
 		if (! p.openPort())
 			throw(new IOException("Cannot open "+p.getPortName()));
+		p.setParams(115200, 8, 1, 0);
 		System.out.println("Opened port "+p.getPortName());
 		p.writeByte((byte)'*');
 	}

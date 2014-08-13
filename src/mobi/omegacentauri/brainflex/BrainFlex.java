@@ -41,9 +41,9 @@ public class BrainFlex implements BrainFlexGUI {
 	public BrainFlex(File saveFile) {
 		Preferences pref = Preferences.userNodeForPackage(BrainFlex.class);
 
-		JFrame mainWindow = new JFrame();
-		mainWindow.setSize(640, 480);
-		mainWindow.setVisible(true);
+//		JFrame mainWindow = new JFrame();
+//		mainWindow.setSize(640, 480);
+//		mainWindow.setVisible(true);
 		
 		windows = new LinkedList<JFrame>();
 				
@@ -69,6 +69,8 @@ public class BrainFlex implements BrainFlexGUI {
 		catch(Exception e) {
 			log(""+e);
 			mfr = null;
+			System.out.println(""+e);
+			System.exit(1);
 			return;
 		}
 

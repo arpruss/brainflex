@@ -310,7 +310,7 @@ public class Options extends JFrame {
 				prefs.putBoolean(BrainFlex.PREF_FILE_MODE, inMode.getSelectedIndex() == 1);
 				flushPrefs();
 				comPortField.setEnabled(inMode.getSelectedIndex() != 1);
-				saveBinaryCheck.setEnabled(inMode.getSelectedIndex() == 1);
+				saveBinaryCheck.setEnabled(inMode.getSelectedIndex() != 1);
 			}
 		});
 		

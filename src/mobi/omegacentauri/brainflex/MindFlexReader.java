@@ -26,14 +26,11 @@ public class MindFlexReader {
 	public static final int MODE_RAW = 0x02; // 0x02;
     public boolean done;
     // in MODE_RAW, the hardware sends 512 raw packets followed by one processed packet
-    // There are 515 raw packets received per second.
+    // There are ~512 raw packets received per second.
     // I do not know if the sampling times for the raw packets are evenly spaced, or if 
     // it there is a larger gap around the time the processed packet is sent.
-    // The timing in the code simply assumes that each incoming raw packet was sampled 
-    // 1/515th of a second after the preceding.
-    // There is a small chance that that it's 514 instead of 515--it's possible that I
-    // erroneously counted the processed packet along with the raw one. TODO!
-    static final int RAW_PER_SECOND = 515;
+    static final int RAW_PER_SECOND = 512; // approximate
+    
     private static final double PROCESSED_PER_SECOND = RAW_PER_SECOND / 512.;
 
 	private DataLink dataLink;
@@ -139,6 +136,9 @@ public class MindFlexReader {
 			gui.log("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
 			gui.log("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
 			gui.log("Received "+badPacketCount+" bad packets over "+curPowerData.t/1000.+" sec: "+(1000.*badPacketCount/curPowerData.t)+"/sec");
+			System.out.println("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
+			System.out.println("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
+			System.out.println("Received "+badPacketCount+" bad packets over "+curPowerData.t/1000.+" sec: "+(1000.*badPacketCount/curPowerData.t)+"/sec");
 		}
 
 		if (!done) {
@@ -191,6 +191,10 @@ public class MindFlexReader {
 			lastPaintTime = System.currentTimeMillis();
 			gui.updateGraphs();
 			gui.log("Bad packets: "+badPacketCount);
+		}
+		if (System.currentTimeMillis() - t0 > 8000 && mode != -1) {
+			dataLink.transmit(mode);
+			mode = -1;
 		}
 	}
 

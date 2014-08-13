@@ -30,7 +30,7 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 	public BrainLinkBridgeSerialLink(String port) throws Exception {
 		p = new SerialPort(port);
 		
-		int busyTries = 3;
+		int busyTries = 4;
 
 		while (busyTries-- > 0 && ! p.isOpened()) {
 			try {
@@ -41,6 +41,8 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 					throw e;
 			}
 		}
+		
+		p.setParams(115200, 8, 1, 0);
 	}
 
 	public void start(int baud) {
