@@ -192,10 +192,10 @@ public class MindFlexReader {
 			gui.updateGraphs();
 			gui.log("Bad packets: "+badPacketCount);
 		}
-		if (System.currentTimeMillis() - t0 > 8000 && mode != -1) {
-			dataLink.transmit(mode);
-			mode = -1;
-		}
+//		if (System.currentTimeMillis() - t0 > 8000 && mode != -1) {
+//			dataLink.transmit(mode);
+//			mode = -1;
+//		}
 	}
 
 	public static void dumpData(byte[] buffer) {
