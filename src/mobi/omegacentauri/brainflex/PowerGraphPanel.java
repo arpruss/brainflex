@@ -7,6 +7,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import mobi.omegacentauri.brainflex.MindFlexReader.PowerData;
@@ -31,6 +32,8 @@ public class PowerGraphPanel extends GraphPanel {
 			return;
 
 		calculateTSize(s, (double)data.get(n-1).t, w.scale * VISIBLE, 1000., 1.);
+		marks.add(new Mark(data.get(n-1).t, -1, "end"));
+		Collections.sort(marks);
 
 		double ySize = 0;
 
@@ -47,55 +50,52 @@ public class PowerGraphPanel extends GraphPanel {
 
 		g2.setColor(Color.BLUE);
 		g2.setFont(new Font("default", Font.BOLD, 12));
-		Mark lastM = null;
-		Mark nextM = null;
-		for (Mark m: marks) {
+
+
+		for (int i = 0 ; i < marks.size() ; i++) {
+			Mark m = marks.get(i);
 			if (startT <= m.t && m.t < endT) {
-				if (lastM == null || m.t >= lastM.t) {
-					lastM = m;
-				}
-				if (nextM == null || m.t < nextM.t) {
-					nextM = m;
-				}
 				double x = scaleT(m.t);
-				Line2D lin = new Line2D.Double(x, 0,
-						x, effectiveHeight);
-				g2.draw(lin);
-				if (m.descriptor.length() > 0) {
-					g2.drawChars(m.descriptor.toCharArray(), 0, m.descriptor.length(), (int)x, (int)s.getHeight()-14);
+				if (m.rawCount >= 0) {
+					Line2D lin = new Line2D.Double(x, 0,
+							x, effectiveHeight);
+					g2.draw(lin);
+					if (m.descriptor.length() > 0) {
+						g2.drawChars(m.descriptor.toCharArray(), 0, m.descriptor.length(), (int)x, (int)s.getHeight()-14);
+					}
 				}
 			}
 		}
 		
-		int fromTime;
-		String avgDesc;
-		if (lastM == null) {
-			fromTime = 0;
-			avgDesc = "start";
-		}
-		else {
-			fromTime = lastM.t;
-			if (lastM.descriptor.length() == 0) 
-				avgDesc = "unnamed";
-			else
-				avgDesc = lastM.descriptor;
-		}
-		
-		avgDesc += "-";
-
-		int toTime;
-		if (nextM == null) {
-			toTime = data.get(n-1).t;
-			avgDesc += "end";
-		}
-		else {
-			toTime = nextM.t;
-			if (nextM.descriptor.length() == 0) 
-				avgDesc += "unnamed";
-			else
-				avgDesc += nextM.descriptor;
-		}
-		avgDesc += ": ";
+//		int fromTime;
+//		String avgDesc;
+//		if (lastM == null) {
+//			fromTime = 0;
+//			avgDesc = "start";
+//		}
+//		else {
+//			fromTime = lastM.t;
+//			if (lastM.descriptor.length() == 0) 
+//				avgDesc = "unnamed";
+//			else
+//				avgDesc = lastM.descriptor;
+//		}
+//		
+//		avgDesc += "-";
+//
+//		int toTime;
+//		if (nextM == null) {
+//			toTime = data.get(n-1).t;
+//			avgDesc += "end";
+//		}
+//		else {
+//			toTime = nextM.t;
+//			if (nextM.descriptor.length() == 0) 
+//				avgDesc += "unnamed";
+//			else
+//				avgDesc += nextM.descriptor;
+//		}
+//		avgDesc += ": ";
 
 		g2.setColor(Color.GREEN);
 		for (int j = 0 ; j < MindFlexReader.POWER_NAMES.length + 1 ; j++) {
@@ -108,21 +108,12 @@ public class PowerGraphPanel extends GraphPanel {
 		g2.setFont(new Font("default", Font.BOLD, 12));
 		for (int j = 0 ; j < MindFlexReader.POWER_NAMES.length ; j++) {
 			g2.drawChars(MindFlexReader.POWER_NAMES[j].toCharArray(), 0, MindFlexReader.POWER_NAMES[j].length(), 
-					0, (int)(j * subgraphHeight + ySize * .5 * yScale + 10-14));
-			String avg = avgDesc + new DecimalFormat("0.000").format(getAveragePower(data, n, fromTime, toTime, j));
-			g2.drawChars(avg.toCharArray(), 0, avg.length(), 
-					0, (int)(j * subgraphHeight + ySize * .5 * yScale + 10));
+					0, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
 		}
 		g2.drawChars("Attention".toCharArray(), 0, "Attention".length(), 
-				0, (int)(MindFlexReader.POWER_NAMES.length * subgraphHeight + ySize * .5 * yScale + 10-14));
-		String avg = avgDesc + new DecimalFormat("0.000").format(getAverageAttention(data, n, fromTime, toTime));
-		g2.drawChars(avg.toCharArray(), 0, avg.length(), 
-				0, (int)(MindFlexReader.POWER_NAMES.length * subgraphHeight + ySize * .5 * yScale + 10));
+				0, (int)(MindFlexReader.POWER_NAMES.length * subgraphHeight + ySize * .5 * yScale + 6));
 		g2.drawChars("Meditation".toCharArray(), 0, "Meditation".length(), 
-				0, (int)((1+MindFlexReader.POWER_NAMES.length) * subgraphHeight + ySize * .5 * yScale + 10-14));
-		avg = avgDesc + new DecimalFormat("0.000").format(getAverageMeditation(data, n, fromTime, toTime));
-		g2.drawChars(avg.toCharArray(), 0, avg.length(), 
-				0, (int)((1+MindFlexReader.POWER_NAMES.length) * subgraphHeight + ySize * .5 * yScale + 10));
+				0, (int)((1+MindFlexReader.POWER_NAMES.length) * subgraphHeight + ySize * .5 * yScale + 6));
 
 		g2.setColor(Color.BLACK);
 		MindFlexReader.PowerData d0 = null;

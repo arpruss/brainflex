@@ -4,7 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class Mark {
+public class Mark implements Comparable {
 	int t;
 	int rawCount;
 	String descriptor;
@@ -29,5 +29,16 @@ public class Mark {
 		t = dataIn.readInt();
 		rawCount = dataIn.readInt();
 		descriptor = dataIn.readUTF();
+	}
+
+	@Override
+	public int compareTo(Object arg0) {
+		Mark m = (Mark)arg0;
+		if (t < m.t)
+			return -1;
+		else if (m.t < t)
+			return 1;
+		else
+			return 0;
 	}
 }
