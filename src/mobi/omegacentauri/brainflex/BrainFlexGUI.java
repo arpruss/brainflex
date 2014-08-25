@@ -2,24 +2,23 @@ package mobi.omegacentauri.brainflex;
 
 import java.util.List;
 
-public interface BrainFlexGUI {
-	void updateGraphs();
-	void terminate();
-	int getMode();
-	List<MindFlexReader.PowerData> getPowerDataCopy();
-	List<Integer> getRawDataCopy();
-	List<Mark> getMarksCopy();
-	MindFlexReader getMindFlexReader();
-	void log(String s);
+
+public abstract class BrainFlexGUI {
+	protected List<Mark> marks;
+
+	abstract void updateGraphs();
+	abstract void terminate();
+	abstract int getMode();
+	abstract List<MindFlexReader.PowerData> getPowerDataCopy();
+	abstract List<Integer> getRawDataCopy();
+	abstract List<Mark> getMarksCopy();
+	abstract MindFlexReader getMindFlexReader();
+	abstract void log(String s);
 	
-	public class Mark {
-		int t;
-		int rawCount;
-		
-		public Mark(int t, int rawCount) {
-			this.t = t;
-			this.rawCount = rawCount;
-		}
+	
+	public void addMark(Mark mark) {
+		synchronized(marks) {
+			marks.add(mark);
+		}		
 	}
-	
 }

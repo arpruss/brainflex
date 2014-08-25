@@ -21,8 +21,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
-public class BrainFlex implements BrainFlexGUI {
-	private List<Mark> marks;
+public class BrainFlex extends BrainFlexGUI {
 	private List<JFrame> windows;
 	MindFlexReader mfr;
     static final private boolean rawDump = false;
@@ -233,12 +232,6 @@ public class BrainFlex implements BrainFlexGUI {
 	@Override
 	public MindFlexReader getMindFlexReader() {
 		return mfr;
-	}
-
-	public void addMark(Mark mark) {
-		synchronized(marks) {
-			marks.add(mark);
-		}		
 	}
 
 //	public void closing(ViewerWindow toClose) {

@@ -17,8 +17,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JTextField;
 
-import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
-
 public class ViewerWindow extends JFrame {
 	private static final long serialVersionUID = 7102164930300849382L;
 	public JScrollBar scrollBar;

@@ -39,7 +39,7 @@ public abstract class GraphPanel extends JPanel {
 		draw((Graphics2D)g, getSize(), gui.getMarksCopy());
 	}
 	
-	protected abstract void draw(Graphics2D g2, Dimension s, List<BrainFlexGUI.Mark> marks);
+	protected abstract void draw(Graphics2D g2, Dimension s, List<Mark> marks);
 	
 	double scaleT(double t) {
 		return (t - startT) * tScale;

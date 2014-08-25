@@ -15,8 +15,6 @@ import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 
-import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
-
 public class RawGraphPanel extends GraphPanel {
 	/**
 	 *
@@ -48,7 +46,7 @@ public class RawGraphPanel extends GraphPanel {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void draw(Graphics2D g2, Dimension s, 
-			List<BrainFlexGUI.Mark> marks) {
+			List<Mark> marks) {
 		
 		List<Integer> data = new ArrayList<Integer>((List<Integer>) origData);
 		

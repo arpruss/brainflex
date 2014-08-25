@@ -1,5 +1,6 @@
 package mobi.omegacentauri.brainflex;
 
+import java.awt.SystemColor;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class MindFlexReader {
     // I do not know if the sampling times for the raw packets are evenly spaced, or if 
     // it there is a larger gap around the time the processed packet is sent.
     static final int RAW_PER_SECOND = 512; // approximate
+    static final int MARKER_CODE = 0x99;
     
     private static final double PROCESSED_PER_SECOND = RAW_PER_SECOND / 512.;
 
@@ -281,6 +283,10 @@ public class MindFlexReader {
 		case (byte)0x86:
 			gui.log("RRINTERVAL "+(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1]))) );
 		break;
+		case (byte)MARKER_CODE:
+			gui.addMark(new Mark(getSigned32(buffer, pos), getSigned32(buffer, pos+4), 
+					(char)buffer[pos+9] ));
+		break;
 		default:
 			gui.log("UNPARSED "/* +excodeLevel+*/+" "+code);
 			break;
@@ -289,12 +295,19 @@ public class MindFlexReader {
 		return pos+dataLength;
 	}
 
-//	private long getUnsigned32(byte[] buffer, int pos) {
-//		return ((0xFF&(long)buffer[pos]) << 24) |
-//				((0xFF&(long)buffer[pos+1]) << 16) |
-//				((0xFF&(long)buffer[pos+2]) << 8) |
-//				((0xFF&(long)buffer[pos+3]));
-//	}
+	private long getUnsigned32(byte[] buffer, int pos) {
+		return ((0xFF&(long)buffer[pos]) << 24) |
+				((0xFF&(long)buffer[pos+1]) << 16) |
+				((0xFF&(long)buffer[pos+2]) << 8) |
+				((0xFF&(long)buffer[pos+3]));
+	}
+	
+	private int getSigned32(byte[] buffer, int pos) {
+		return ((0xFF&(int)buffer[pos]) << 24) |
+				((0xFF&(int)buffer[pos+1]) << 16) |
+				((0xFF&(int)buffer[pos+2]) << 8) |
+				((0xFF&(int)buffer[pos+3]));
+	}
 
 	private void parseASIC_EEG_POWER(byte[] buffer, int pos) {
 		double sum = 0;

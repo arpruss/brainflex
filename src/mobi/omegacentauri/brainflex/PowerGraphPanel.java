@@ -8,8 +8,6 @@ import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.List;
 
-import mobi.omegacentauri.brainflex.BrainFlexGUI.Mark;
-
 public class PowerGraphPanel extends GraphPanel {
 	private static final long serialVersionUID = -4623488847975233096L;
 	private static final int VISIBLE=512 * 1000;
@@ -22,7 +20,7 @@ public class PowerGraphPanel extends GraphPanel {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected
-	void draw(Graphics2D g2, Dimension s, List<BrainFlexGUI.Mark> marks) {
+	void draw(Graphics2D g2, Dimension s, List<Mark> marks) {
 		List<MindFlexReader.PowerData> data = new ArrayList<MindFlexReader.PowerData>((List<MindFlexReader.PowerData>)origData);
 		
 		int n = w.pause.point < 0 ? data.size() : w.pause.point;
