@@ -35,7 +35,7 @@ public class RawGraphPanel extends GraphPanel {
 //	private double primaryFreq;
 
 	public RawGraphPanel(BrainFlexGUI gui, ViewerWindow w, List<?> data) {
-		super(gui, w, data);
+		super(gui, w, data, 0.);
 
 		hr = Preferences.userNodeForPackage(BrainFlex.class).getBoolean(BrainFlex.PREF_HEART_MODE, false);
 

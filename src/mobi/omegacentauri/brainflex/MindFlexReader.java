@@ -2,6 +2,7 @@ package mobi.omegacentauri.brainflex;
 
 import java.awt.SystemColor;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public class MindFlexReader {
 	private int mode;
 	private File saveFile;
 	private Thread dataReadThread = null;
+	private File tempSaveFile;
 
     public MindFlexReader(BrainFlexGUI gui, DataLink dataLink, int mode, File saveFile) {
     	this.mode = mode;
@@ -58,8 +60,10 @@ public class MindFlexReader {
 		dataReadThread = Thread.currentThread();
 		FileOutputStream out = null;
 		if (saveFile != null) {
+			tempSaveFile = new File(saveFile.getPath()+".tmp");
 			saveFile.delete();
-			saveFile.createNewFile();
+			tempSaveFile.delete();
+			tempSaveFile.createNewFile();
 			out = new FileOutputStream(saveFile);
 		}
 		byte[] buffer = new byte[0];
@@ -159,8 +163,20 @@ public class MindFlexReader {
 			dataLink.stop();
 			dataLink = null;
 		}
-		if (out != null)
+		if (out != null) {
 			out.close();
+			FileInputStream in = new FileInputStream(tempSaveFile);
+			saveFile.createNewFile();
+			out = new FileOutputStream(saveFile);
+			gui.writeMarks(out);
+			byte[] outBuf = new byte[16384];
+			int len;
+			while (0 <= (len = in.read(outBuf))) {
+				out.write(outBuf, 0, len);
+			}
+			in.close();
+			out.close();
+		}
 		if (gui!=null)
 			gui.terminate();
 	}
@@ -283,10 +299,6 @@ public class MindFlexReader {
 		case (byte)0x86:
 			gui.log("RRINTERVAL "+(((0xFF&(int)buffer[pos])<<8) | ((0xFF&(int)buffer[pos+1]))) );
 		break;
-		case (byte)MARKER_CODE:
-			gui.addMark(new Mark(getSigned32(buffer, pos), getSigned32(buffer, pos+4), 
-					(char)buffer[pos+9] ));
-		break;
 		default:
 			gui.log("UNPARSED "/* +excodeLevel+*/+" "+code);
 			break;
@@ -294,20 +306,20 @@ public class MindFlexReader {
 		
 		return pos+dataLength;
 	}
-
-	private long getUnsigned32(byte[] buffer, int pos) {
-		return ((0xFF&(long)buffer[pos]) << 24) |
-				((0xFF&(long)buffer[pos+1]) << 16) |
-				((0xFF&(long)buffer[pos+2]) << 8) |
-				((0xFF&(long)buffer[pos+3]));
-	}
 	
-	private int getSigned32(byte[] buffer, int pos) {
-		return ((0xFF&(int)buffer[pos]) << 24) |
-				((0xFF&(int)buffer[pos+1]) << 16) |
-				((0xFF&(int)buffer[pos+2]) << 8) |
-				((0xFF&(int)buffer[pos+3]));
-	}
+//	private long getUnsigned32(byte[] buffer, int pos) {
+//		return ((0xFF&(long)buffer[pos]) << 24) |
+//				((0xFF&(long)buffer[pos+1]) << 16) |
+//				((0xFF&(long)buffer[pos+2]) << 8) |
+//				((0xFF&(long)buffer[pos+3]));
+//	}
+//	
+//	private int getSigned32(byte[] buffer, int pos) {
+//		return ((0xFF&(int)buffer[pos]) << 24) |
+//				((0xFF&(int)buffer[pos+1]) << 16) |
+//				((0xFF&(int)buffer[pos+2]) << 8) |
+//				((0xFF&(int)buffer[pos+3]));
+//	}
 
 	private void parseASIC_EEG_POWER(byte[] buffer, int pos) {
 		double sum = 0;

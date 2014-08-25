@@ -1,10 +1,14 @@
 package mobi.omegacentauri.brainflex;
 
 import java.awt.Dimension;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.text.DecimalFormat;
@@ -29,13 +33,13 @@ public class ViewerWindow extends JFrame {
 	double scale;
 	Pause pause;
 	List<?> data;
-
+	
 	public ViewerWindow(BrainFlex bf, boolean raw) {
 		this.bf = bf;
 		this.mfr = bf.mfr;
 		scale = 1.;
 		pause = new Pause();
-		setSize(640,480);
+		setSize(640,500);
 		setLocationByPlatform(true);
 		
 		if (raw) {
@@ -91,7 +95,6 @@ public class ViewerWindow extends JFrame {
 			}
 		});
 		
-
 		JButton markButton = new JButton("Mark");
 		markButton.addActionListener(new ActionListener() {		
 			@Override

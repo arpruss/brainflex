@@ -7,16 +7,17 @@
 
 package mobi.omegacentauri.brainflex;
 
+import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 
 public class FileDataLink extends DataLink {
-	private FileInputStream in;
+	private DataInputStream in;
 	public final int BUFFER_SIZE = 512;
 	public boolean eof;
 
-	public FileDataLink(String s) throws Exception {
-		in = new FileInputStream(s);
+	public FileDataLink(DataInputStream in) throws Exception {
+		this.in = in;
 		eof = false;
 	}
 	

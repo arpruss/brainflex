@@ -9,8 +9,6 @@
 
 package mobi.omegacentauri.brainflex;
 
-import java.io.IOException;
-
 import jssc.SerialPort;
 import jssc.SerialPortException;
 

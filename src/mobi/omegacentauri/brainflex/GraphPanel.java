@@ -22,14 +22,17 @@ public abstract class GraphPanel extends JPanel {
 	protected MindFlexReader mfr;
 	protected ViewerWindow w;
 	protected List<?> origData;
+	double reserveLeft;
+	private double leftOffset;
 	
-	public GraphPanel(BrainFlexGUI gui, ViewerWindow w, List<?> data) {
+	public GraphPanel(BrainFlexGUI gui, ViewerWindow w, List<?> data, double reserveLeft) {
 		super();
 		this.w = w;
 		this.gui = gui;
 		this.mfr = gui.getMindFlexReader();
 		this.scrollBar = w.scrollBar;
 		this.origData = data;
+		this.reserveLeft = reserveLeft;
 	}
 	
 	@Override
@@ -42,7 +45,7 @@ public abstract class GraphPanel extends JPanel {
 	protected abstract void draw(Graphics2D g2, Dimension s, List<Mark> marks);
 	
 	double scaleT(double t) {
-		return (t - startT) * tScale;
+		return (t - startT) * tScale + leftOffset;
 	}
 	
 	void calculateTSize( Dimension s, double currentSize, double visibleLimit, double minVisible, double scrollBarScale ) {
@@ -73,7 +76,8 @@ public abstract class GraphPanel extends JPanel {
 			tSize = Math.pow(2, Math.ceil(log2(Math.max(maxT - startT, 16.))));
 		}
 		endT = startT + tSize;
-		tScale = s.getWidth() / tSize;
+		tScale = s.getWidth() * (1-reserveLeft) / tSize;
+		leftOffset = s.getWidth() * reserveLeft;
 	}
 	
 	void scaledLine(Graphics2D g2, double t1, double y1, double t2, double y2, int subgraph) {

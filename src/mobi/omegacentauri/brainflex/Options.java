@@ -201,7 +201,7 @@ public class Options extends JFrame {
 								@Override
 								public boolean accept(File arg0) {
 									if (arg0.isDirectory())
-										return false;
+										return true;
 									return arg0.getName().endsWith(BINEXT);
 								}
 
@@ -226,13 +226,15 @@ public class Options extends JFrame {
 					}
 					else {
 						final JFileChooser fc = new JFileChooser();
-						fc.setSelectedFile(new File(prefs.get(BrainFlex.PREF_FILE_NAME, null)));
+						String name = prefs.get(BrainFlex.PREF_FILE_NAME, null);
+						if (name != null)
+							fc.setSelectedFile(new File(name));
 						fc.setFileFilter(new FileFilter() {
 
 							@Override
 							public boolean accept(File arg0) {
 								if (arg0.isDirectory())
-									return false;
+									return true;
 								return arg0.getName().endsWith(BINEXT);
 							}
 

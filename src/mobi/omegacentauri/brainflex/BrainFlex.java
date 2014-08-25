@@ -7,9 +7,14 @@
 
 package mobi.omegacentauri.brainflex;
 
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,12 +42,33 @@ public class BrainFlex extends BrainFlexGUI {
 	public int mode;
 	LogWindow logWindow;
 
+	private class MyDispatcher implements KeyEventDispatcher {
+		@Override
+		public boolean dispatchKeyEvent(KeyEvent e) {
+			if (e.getID() == KeyEvent.KEY_TYPED) {
+				char c = e.getKeyChar();
+				if (Character.isAlphabetic(c) || Character.isDigit(c)) {
+					Mark mark = new Mark((int)(System.currentTimeMillis()-mfr.t0), 
+							mfr.rawData.size(), Character.toString(c));
+					System.out.println("Mark "+mark.t+ " "+mark.rawCount+" "+c);
+					addMark(mark);
+				}
+				return true;
+			}
+			return false;
+		}
+	}
+
 	public BrainFlex(File saveFile) {
+		super();
+		
 		Preferences pref = Preferences.userNodeForPackage(BrainFlex.class);
 
 //		JFrame mainWindow = new JFrame();
 //		mainWindow.setSize(640, 480);
 //		mainWindow.setVisible(true);
+		
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new MyDispatcher());
 		
 		windows = new LinkedList<JFrame>();
 				
@@ -55,7 +81,9 @@ public class BrainFlex extends BrainFlexGUI {
 
 		try {
 			if (pref.getBoolean(PREF_FILE_MODE, false)) {
-				dataLink = new FileDataLink(pref.get(PREF_FILE_NAME, null));
+				DataInputStream in = new DataInputStream(new FileInputStream(new File(pref.get(PREF_FILE_NAME, null))));
+				readMarks(in);
+				dataLink = new FileDataLink(in);
 			}
 			else if (pref.getBoolean(PREF_CUSTOM_FW, false)) { 
 				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));
@@ -82,8 +110,6 @@ public class BrainFlex extends BrainFlexGUI {
 
 		mfr = new MindFlexReader(this, dataLink, mode, saveFile);
 
-		marks = new ArrayList<Mark>();
-		
 		if (!pref.getBoolean(PREF_HEART_MODE, false) && pref.getBoolean(PREF_POWER, true))
 			windows.add(new ViewerWindow(this, false));
 
