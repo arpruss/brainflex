@@ -32,7 +32,7 @@ public class PowerGraphPanel extends GraphPanel {
 			return;
 
 		calculateTSize(s, (double)data.get(n-1).t, w.scale * VISIBLE, 1000., 1.);
-		marks.add(new Mark(data.get(n-1).t, -1, "end"));
+		marks.add(new Mark(0, -1, "start"));
 		Collections.sort(marks);
 
 		double ySize = 0;
@@ -51,6 +51,8 @@ public class PowerGraphPanel extends GraphPanel {
 		g2.setColor(Color.BLUE);
 		g2.setFont(new Font("default", Font.BOLD, 12));
 
+		DecimalFormat df0 = new DecimalFormat("0.000");
+		DecimalFormat df1 = new DecimalFormat("0.0");
 
 		for (int i = 0 ; i < marks.size() ; i++) {
 			Mark m = marks.get(i);
@@ -64,6 +66,34 @@ public class PowerGraphPanel extends GraphPanel {
 						g2.drawChars(m.descriptor.toCharArray(), 0, m.descriptor.length(), (int)x, (int)s.getHeight()-14);
 					}
 				}
+					
+					int toTime;
+					if (i + 1 < marks.size()) 
+						toTime = marks.get(i+1).t;
+					else
+						toTime = (int) (endT+2);
+					int j;
+					
+					String avg;
+					
+					x += 2;
+					
+					for (j = 0 ; j < MindFlexReader.POWER_NAMES.length ; j++) {
+						avg = df0.format(getAveragePower(data, n, m.t, toTime, j));
+						g2.drawChars(avg.toCharArray(), 0, avg.length(), 
+								(int)x, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
+					}
+					
+					avg = df0.format(getAverageAttention(data, n, m.t, toTime));
+					g2.drawChars(avg.toCharArray(), 0, avg.length(), 
+							(int)x, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
+
+					j++;
+					
+					avg = df0.format(getAverageMeditation(data, n, m.t, toTime));
+					g2.drawChars(avg.toCharArray(), 0, avg.length(), 
+							(int)x, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
+				
 			}
 		}
 		
