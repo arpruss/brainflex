@@ -33,6 +33,11 @@ public class Options extends JFrame {
 	Preferences prefs;
 	protected File saveFile;
 	static final String BINEXT = ".thg";
+	static public final Class[] LINKS = { SerialLink57600.class, 
+		MindWaveMobile.class, 
+		BrainLinkSerialLinkLL.class, 
+		BrainLinkBridgeSerialLink.class, FileDataLink.class
+	};
 	
 	public Options() {
 		super();
@@ -53,12 +58,16 @@ public class Options extends JFrame {
 //		comPortPanel.setLayout(new BoxLayout(comPortPanel, BoxLayout.X_AXIS));
 
 		final JComboBox<String> inMode = new JComboBox<String>();
-		inMode.addItem("Capture from serial port");
+		inMode.addItem("Mindwave Mobile");
+		inMode.addItem("57600 baud Bluetooth-serial bridge + MindFlex");
+		inMode.addItem("BrainLink with standard firmware + MindFlex");
+		inMode.addItem("BrainLink with custom firmware + MindFlex");
 		inMode.addItem("Load from saved file");
-
-//		JLabel label = new JLabel("Serial port: ");
 		comPortBox.add(inMode);
 
+		final JLabel comPortLabel = new JLabel("Serial port:");
+		comPortBox.add(comPortLabel);
+		
 		final TextField comPortField = new TextField(prefs.get(BrainFlex.PREF_SERIAL_PORT, ""));
 		comPortField.selectAll();
 		Dimension m = comPortField.getMaximumSize();
@@ -66,7 +75,7 @@ public class Options extends JFrame {
 		comPortField.setMaximumSize(m);
 		comPortBox.add(comPortField);
 		
-		inMode.setSelectedIndex(prefs.getBoolean(BrainFlex.PREF_FILE_MODE, false) ? 1 : 0);
+		inMode.setSelectedIndex(prefs.getInt(BrainFlex.PREF_IN_MODE, 0));
 		comPortField.addTextListener(new TextListener() {
 			
 			@Override
@@ -139,23 +148,7 @@ public class Options extends JFrame {
 			}
 		});
 		
-		final Checkbox customFWCheck = new Checkbox("Custom BrainLink firmware (github.com/arpruss/custom-brainlink-firmware)", 
-				prefs.getBoolean(BrainFlex.PREF_CUSTOM_FW, false));
-		
-		customFWCheck.addItemListener(new ItemListener() {
-			
-			@Override
-			public void itemStateChanged(ItemEvent arg0) {
-				prefs.putBoolean(BrainFlex.PREF_CUSTOM_FW, customFWCheck.getState());
-				try {
-					prefs.flush();
-				} catch (BackingStoreException e) {
-				}
-			}
-		});
-		
-		rawCheck.addItemListener(new ItemListener() {
-			
+		rawCheck.addItemListener(new ItemListener() {			
 			@Override
 			public void itemStateChanged(ItemEvent arg0) {
 				prefs.putBoolean(BrainFlex.PREF_POWER, powerCheck.getState());
@@ -189,7 +182,7 @@ public class Options extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if ( powerCheck.getState() || rawCheck.getState()) {
-					if (inMode.getSelectedIndex() == 0) {
+					if (LINKS[inMode.getSelectedIndex()] == FileDataLink.class) {
 						if (comPortField.getText() == null ||
 								comPortField.getText().length() == 0)
 							return;
@@ -285,34 +278,42 @@ public class Options extends JFrame {
 		buttonPanel.add(notes);
 		buttonPanel.add(license);
 		
-		
 		pane.add(comPortBox);
 		pane.add(heartCheck);
 		pane.add(rawCheck);
 		pane.add(powerCheck);
 		pane.add(logCheck);
-		pane.add(customFWCheck);
 		pane.add(saveBinaryCheck);
 		pane.add(buttonPanel);
 		
-		if (prefs.getBoolean(BrainFlex.PREF_FILE_MODE, false)) {
+		int curInMode = prefs.getInt(BrainFlex.PREF_IN_MODE, 0);
+		inMode.setSelectedIndex(curInMode);
+		if (LINKS[curInMode] == FileDataLink.class) {
+			comPortLabel.setEnabled(false);
 			comPortField.setEnabled(false);
-			inMode.setSelectedIndex(1);
 			saveBinaryCheck.setEnabled(false);
 		}
 		else {
+			comPortLabel.setEnabled(true);
 			comPortField.setEnabled(true);
-			inMode.setSelectedIndex(0);
 			saveBinaryCheck.setEnabled(true);
 		}
 			
 		inMode.addActionListener(new ActionListener() {			
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				prefs.putBoolean(BrainFlex.PREF_FILE_MODE, inMode.getSelectedIndex() == 1);
+				prefs.putInt(BrainFlex.PREF_IN_MODE, inMode.getSelectedIndex());
 				flushPrefs();
-				comPortField.setEnabled(inMode.getSelectedIndex() != 1);
-				saveBinaryCheck.setEnabled(inMode.getSelectedIndex() != 1);
+				if (LINKS[inMode.getSelectedIndex()] == FileDataLink.class) {
+					comPortLabel.setEnabled(false);
+					comPortField.setEnabled(false);
+					saveBinaryCheck.setEnabled(false);
+				}
+				else {
+					comPortLabel.setEnabled(true);
+					comPortField.setEnabled(true);
+					saveBinaryCheck.setEnabled(true);
+				}
 			}
 		});
 		

@@ -35,10 +35,10 @@ public class BrainFlex extends BrainFlexGUI {
 	public static final String PREF_POWER = "power";
 	public static final String PREF_CUSTOM_FW = "customFW";
 	public static final String PREF_LOG_WINDOW = "logWindow";
-	public static final String PREF_FILE_MODE = "inFile";
 	public static final String PREF_FILE_NAME = "fileName";
 	public static final String PREF_SAVE_BINARY = "saveBinary";
 	public static final String PREF_HEART_MODE = "ecg";
+	public static final String PREF_IN_MODE = "inMode";
 	public int mode;
 	LogWindow logWindow;
 
@@ -80,17 +80,22 @@ public class BrainFlex extends BrainFlexGUI {
 		DataLink dataLink;
 
 		try {
-			if (pref.getBoolean(PREF_FILE_MODE, false)) {
+			int inMode = pref.getInt(PREF_IN_MODE, 0);
+			if (Options.LINKS[inMode] == FileDataLink.class) {
 				DataInputStream in = new DataInputStream(new FileInputStream(new File(pref.get(PREF_FILE_NAME, null))));
 				readMarks(in);
 				dataLink = new FileDataLink(in);
 			}
-			else if (pref.getBoolean(PREF_CUSTOM_FW, false)) { 
+			else if (Options.LINKS[inMode] == BrainLinkBridgeSerialLink.class){
 				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));
 			}
-			else {
-				dataLink = new BrainLinkSerialLinkLL(pref.get(PREF_SERIAL_PORT, null));
+			else if (Options.LINKS[inMode] == BrainLinkSerialLinkLL.class){
+				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));
 			}
+			else { //if (Options.LINKS[inMode] == SerialLink57600.class){
+				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));
+			}
+			
 			log(dataLink.getClass().toString());
 		}
 		catch(Exception e) {
