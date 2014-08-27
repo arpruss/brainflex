@@ -12,7 +12,7 @@ package mobi.omegacentauri.brainflex;
 import jssc.SerialPort;
 import jssc.SerialPortException;
 
-public class BrainLinkBridgeSerialLink extends DataLink {
+public class BrainLinkBridgeSerialLink extends SerialDataLink {
   // Use information from: http://www.brainlinksystem.com/brainlink-hardware-description
   // and calculator from: http://www.avrcalc.elektronik-projekt.de/xmega/baud_rate_calculator
   // with 32MHz clock rate.
@@ -23,26 +23,11 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 	private static final byte[] BAUD115200 = { '*', 'C', 0, (byte)(131&0xFF), -3 };
 	private static final byte[] BAUD38400 = { '*', 'C', 0, (byte)(204&0xFF), -2 };
 
-	private SerialPort p;
-
 	public BrainLinkBridgeSerialLink(String port) throws Exception {
-		p = new SerialPort(port);
-		
-		int busyTries = 4;
-
-		while (busyTries-- > 0 && ! p.isOpened()) {
-			try {
-				p.openPort();
-			}
-			catch (SerialPortException e) {
-				if (busyTries <= 0 || ! e.getExceptionType().equals(SerialPortException.TYPE_PORT_BUSY)) 
-					throw e;
-			}
-		}
-		
-		p.setParams(115200, 8, 1, 0);
+		super(port);
 	}
 
+	@Override
 	public void start(int baud) {
 		setBaud(baud);
 		try {
@@ -51,7 +36,7 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 		}
 	}
 
-	private void setBaud(int baud) {
+	protected void setBaud(int baud) {
 		this.baud = baud;
 		try {
 			if (baud == 9600)
@@ -71,45 +56,6 @@ public class BrainLinkBridgeSerialLink extends DataLink {
 			}
 		}
 		catch(SerialPortException e) {
-		}
-	}
-
-	public void stop() {
-		try {
-			p.closePort();
-		} catch (SerialPortException e) {
-		}
-	}
-
-	@Override
-	public byte[] receiveBytes() {
-		try {
-			byte[] data = p.readBytes();
-			if (data != null)
-				return data;
-		} catch (SerialPortException e) {
-		}
-
-		return null;
-	}
-
-//	private int scaleTimeout(int timeout) {
-//		return timeout * 9600 / baud;
-//	}
-	
-	@Override
-	public void transmit(byte... data) {
-		try {
-			p.writeBytes(data);
-		} catch (SerialPortException e) {
-		}
-	}
-
-	@Override
-	public void clearBuffer() {
-		try {
-			p.readBytes();
-		} catch (SerialPortException e) {
 		}
 	}
 
