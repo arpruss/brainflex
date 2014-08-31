@@ -75,6 +75,7 @@ public class MindFlexReader {
 			mode = MODE_NORMAL;
 		
 		int baud = 9600;
+		System.out.println(""+dataLink.getFixedBaud()+" "+mode+" "+dataLink.getClass().toString());
 		if (mode != MODE_NORMAL) {
 			dataLink.preStart(9600, new byte[] { (byte)mode });
 			if (mode >= MODE_RAW)

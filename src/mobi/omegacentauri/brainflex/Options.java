@@ -33,10 +33,12 @@ public class Options extends JFrame {
 	Preferences prefs;
 	protected File saveFile;
 	static final String BINEXT = ".thg";
-	static public final Class[] LINKS = { SerialLink57600.class, 
+	static public final Class LINKS[] = { 
 		MindWaveMobile.class, 
+		SerialLink57600.class, 
 		BrainLinkSerialLinkLL.class, 
-		BrainLinkBridgeSerialLink.class, FileDataLink.class
+		BrainLinkBridgeSerialLink.class, 
+		FileDataLink.class
 	};
 	
 	public Options() {
@@ -76,6 +78,16 @@ public class Options extends JFrame {
 		comPortBox.add(comPortField);
 		
 		inMode.setSelectedIndex(prefs.getInt(BrainFlex.PREF_IN_MODE, 0));
+		
+		inMode.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				System.out.println(""+inMode.getSelectedIndex());
+				prefs.putInt(BrainFlex.PREF_IN_MODE, inMode.getSelectedIndex());
+				flushPrefs();
+			}});
+		
 		comPortField.addTextListener(new TextListener() {
 			
 			@Override
@@ -182,7 +194,7 @@ public class Options extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if ( powerCheck.getState() || rawCheck.getState()) {
-					if (LINKS[inMode.getSelectedIndex()] == FileDataLink.class) {
+					if (LINKS[inMode.getSelectedIndex()] != FileDataLink.class) {
 						if (comPortField.getText() == null ||
 								comPortField.getText().length() == 0)
 							return;

@@ -35,22 +35,29 @@ public abstract class DataLink {
 	// quick pre-initialization, possibly at a different baud rate from the main one
 	// The following implementation works for fixed-baud datalinks (assuming baud <= fixed baud).
 	public void preStart(int baud, byte[] data) {
+		MindFlexReader.dumpData(data);
 		transmitFakeBaud(baud, data);
 	}
 
-	// fakes a transmission at a lower baud rate
-	// assume 8N1
-	public void transmitFakeBaud(int fakeBaud, byte... data) {
-		double ratio = (double)baud / fakeBaud;
+	
+	static public byte[] upscaleBaud(int from, int to, byte[] data) {
+		double ratio = (double)to / from;
 		int inBits = 10 * data.length;
 		int outBits = (int) (0.5 + ratio * inBits);
 		byte[] out = new byte[( outBits + 9 ) / 10];
 		for (int i=0; i<outBits; i++)
 			put8N1Bit(out, i, get8N1Bit(data, (int)(i / ratio)));
-		transmit(out);
+		MindFlexReader.dumpData(out);
+		return out;
 	}
 	
-	private boolean get8N1Bit(byte[] data, int bit) {
+	// fakes a transmission at a lower baud rate
+	// assume 8N1
+	public void transmitFakeBaud(int fakeBaud, byte... data) {
+		transmit(upscaleBaud(fakeBaud, baud, data));
+	}
+	
+	private static boolean get8N1Bit(byte[] data, int bit) {
 		if (bit % 10 == 0) // START
 			return false;
 		if (bit % 10 == 9) // STOP
@@ -60,7 +67,7 @@ public abstract class DataLink {
 		return 0 != ( data[bit/10] & ( 1 << ( (bit % 10) - 1 ) ) );
 	}
 	
-	private void put8N1Bit(byte[] out, int bit, boolean value) {
+	private static void put8N1Bit(byte[] out, int bit, boolean value) {
 		if (bit % 10 == 0 || bit % 10 == 9 || bit/10 >= out.length) // ignore start/stop/overflow
 			return;
 		if (value)

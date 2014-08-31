@@ -17,6 +17,7 @@ public class SerialLink57600 extends SerialDataLink {
 
 	public SerialLink57600(String port) throws Exception {
 		super(port);
+		baud = 57600;
 	}
 
 	public int getFixedBaud() {

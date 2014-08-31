@@ -90,10 +90,13 @@ public class BrainFlex extends BrainFlexGUI {
 				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));
 			}
 			else if (Options.LINKS[inMode] == BrainLinkSerialLinkLL.class){
-				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));
+				dataLink = new BrainLinkSerialLinkLL(pref.get(PREF_SERIAL_PORT, null));
 			}
-			else { //if (Options.LINKS[inMode] == SerialLink57600.class){
-				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));
+			else if (Options.LINKS[inMode] == SerialLink57600.class){
+				dataLink = new SerialLink57600(pref.get(PREF_SERIAL_PORT, null));
+			}
+			else {
+				dataLink = new MindWaveMobile(pref.get(PREF_SERIAL_PORT, null));
 			}
 			
 			log(dataLink.getClass().toString());
