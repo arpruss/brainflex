@@ -1,13 +1,16 @@
 package mobi.omegacentauri.brainflex;
 
 import java.awt.SystemColor;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 public class MindFlexReader {
 	static final int PACKET_NO = -1;
@@ -26,6 +29,7 @@ public class MindFlexReader {
 	private long lastPaintTime;
 	public static final int MODE_NORMAL = 0;
 	public static final int MODE_RAW = 0x02; // 0x02;
+	private BufferedWriter out = null;
     public boolean done;
     // in MODE_RAW, the hardware sends 512 raw packets followed by one processed packet
     // There are ~512 raw packets received per second.
@@ -41,7 +45,9 @@ public class MindFlexReader {
 	private int mode;
 	private File saveFile;
 	private Thread dataReadThread = null;
-	private File tempSaveFile;
+	private static final String MARKER_RAW = "R";
+	private static final String MARKER_POWER = "P";
+	static final String MARKER_MARK = "M";
 
     public MindFlexReader(BrainFlexGUI gui, DataLink dataLink, int mode, File saveFile) {
     	this.mode = mode;
@@ -58,13 +64,10 @@ public class MindFlexReader {
 
 	void readData() throws IOException {
 		dataReadThread = Thread.currentThread();
-		FileOutputStream out = null;
 		if (saveFile != null) {
-			tempSaveFile = new File(saveFile.getPath()+".tmp");
 			saveFile.delete();
-			tempSaveFile.delete();
-			tempSaveFile.createNewFile();
-			out = new FileOutputStream(saveFile);
+			saveFile.createNewFile();
+			out = new BufferedWriter(new FileWriter(saveFile));
 		}
 		byte[] buffer = new byte[0];
 
@@ -97,57 +100,76 @@ public class MindFlexReader {
 		//		sleep(100);
 		gui.log("Connected");
 		
-		t0 = System.currentTimeMillis();
-
-		while (!done && !dataLink.eof()) {
-			try {
-				byte[] data = dataLink.receiveBytes();
-				if (data != null) {
-					if (out != null)
-						out.write(data);
-					buffer = concat(buffer, data);
+		if (dataLink.isRaw()) {
+			t0 = System.currentTimeMillis();
 	
-					int i;
-					int n = buffer.length;
-					
-					for (i = 0; i < n; i++) {
-						if (buffer[i] == (byte)0xAA) {
-							int length = detectPacket0(buffer, i);
-							if (length == PACKET_MAYBE) {
-								// possible start of unfinished packet
-								byte[] newBuffer = new byte[n - i];
-								System.arraycopy(buffer, i, newBuffer, 0, buffer.length - i);
-								buffer = newBuffer;
-								break;
-							}
-							else if (length > 0) {
-								parsePacket(buffer, i, length);
-								i += length - 1;
+			while (!done && !dataLink.eof()) {
+				try {
+					byte[] data = dataLink.receiveBytes();
+					if (data != null) {
+						buffer = concat(buffer, data);
+		
+						int i;
+						int n = buffer.length;
+						
+						for (i = 0; i < n; i++) {
+							if (buffer[i] == (byte)0xAA) {
+								int length = detectPacket0(buffer, i);
+								if (length == PACKET_MAYBE) {
+									// possible start of unfinished packet
+									byte[] newBuffer = new byte[n - i];
+									System.arraycopy(buffer, i, newBuffer, 0, buffer.length - i);
+									buffer = newBuffer;
+									break;
+								}
+								else if (length > 0) {
+									parsePacket(buffer, i, length);
+									i += length - 1;
+								}
 							}
 						}
+						
+						if (i >= n)
+							buffer = new byte[0];
 					}
-					
-					if (i >= n)
-						buffer = new byte[0];
+				}
+				catch(Exception e) {				
+				}
+			} 
+	
+			if (gui != null) {
+				gui.updateGraphs();
+			}
+	
+			if (curPowerData != null) {
+				gui.log("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
+				gui.log("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
+				gui.log("Received "+badPacketCount+" bad packets over "+curPowerData.t/1000.+" sec: "+(1000.*badPacketCount/curPowerData.t)+"/sec");
+				System.out.println("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
+				System.out.println("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
+				System.out.println("Received "+badPacketCount+" bad packets over "+curPowerData.t/1000.+" sec: "+(1000.*badPacketCount/curPowerData.t)+"/sec");
+			}
+	
+		}
+		else {
+			t0 = 0;
+			String line;
+			while (null != (line = dataLink.readLine())) {
+				if (line.startsWith(MARKER_MARK)) {
+					gui.addMark(line.substring(MARKER_MARK.length()));
+				}
+				else if (line.startsWith(MARKER_RAW)) {
+					rawData.add(Integer.parseInt(line.substring(MARKER_RAW.length())));
+				}
+				else if (line.startsWith(MARKER_POWER)) {
+					powerData.add(new PowerData(line.substring(MARKER_POWER.length())));
+				}
+
+				if (gui != null) {
+					gui.updateGraphs();
 				}
 			}
-			catch(Exception e) {				
-			}
-		} 
-
-		if (gui != null) {
-			gui.updateGraphs();
 		}
-
-		if (curPowerData != null) {
-			gui.log("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
-			gui.log("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
-			gui.log("Received "+badPacketCount+" bad packets over "+curPowerData.t/1000.+" sec: "+(1000.*badPacketCount/curPowerData.t)+"/sec");
-			System.out.println("Received "+rawData.size()+" raw packets over "+curPowerData.t/1000.+" sec: "+(1000.*rawData.size()/curPowerData.t)+"/sec");
-			System.out.println("Received "+powerData.size()+" processed packets over "+curPowerData.t/1000.+" sec: "+(1000.*powerData.size()/curPowerData.t)+"/sec");
-			System.out.println("Received "+badPacketCount+" bad packets over "+curPowerData.t/1000.+" sec: "+(1000.*badPacketCount/curPowerData.t)+"/sec");
-		}
-
 		if (!done) {
 			gui.log("End of data");
 			while(!done) {
@@ -165,17 +187,7 @@ public class MindFlexReader {
 			dataLink = null;
 		}
 		if (out != null) {
-			out.close();
-			FileInputStream in = new FileInputStream(tempSaveFile);
-			saveFile.createNewFile();
-			out = new FileOutputStream(saveFile);
 			gui.writeMarks(out);
-			byte[] outBuf = new byte[16384];
-			int len;
-			while (0 <= (len = in.read(outBuf))) {
-				out.write(outBuf, 0, len);
-			}
-			in.close();
 			out.close();
 		}
 		if (gui!=null)
@@ -195,6 +207,11 @@ public class MindFlexReader {
 		if (haveRaw) {
 			synchronized(rawData) {
 				rawData.add(curRaw);
+				if (out != null)
+					try {
+						out.write(MARKER_RAW+curRaw+"\n");
+					} catch (IOException e) {
+					}
 			}
 		}
 
@@ -203,6 +220,11 @@ public class MindFlexReader {
 				if (! dataLink.isRealTime())
 					curPowerData.t = (int)(powerData.size() * PROCESSED_PER_SECOND);
 				powerData.add(curPowerData);
+				if (out != null)
+					try {
+						out.write(MARKER_POWER+curPowerData.toString()+"\n");
+					} catch (IOException e) {
+					}
 				gui.log("TIME "+curPowerData.t);
 			}
 		}
@@ -402,6 +424,28 @@ public class MindFlexReader {
 		
 		public PowerData(int t) {
 			this.t = t;
+		}
+		
+		@Override
+		public String toString() {
+			String s = ""+t+" "+(havePower?1:0)+" ";
+			for (int i = 0 ; i < MindFlexReader.POWER_NAMES.length ; i++)
+				s += ""+power[i]+" ";
+			return s + (haveMeditation?1:0)+" "+meditation+" "+(haveAttention?1:0)+" "+attention;
+		}
+		
+		public PowerData(String s) {
+			System.out.println("Scanning "+s);
+			Scanner scan = new Scanner(s);
+			t = scan.nextInt();
+			havePower = 0 != scan.nextInt();
+			for (int i = 0 ; i < MindFlexReader.POWER_NAMES.length ; i++)
+				power[i] = scan.nextDouble();
+			haveMeditation = 0 != scan.nextInt();
+			meditation = scan.nextDouble();
+			haveAttention = 0 != scan.nextInt();
+			attention = scan.nextDouble();
+			scan.close();
 		}
 	}
 	

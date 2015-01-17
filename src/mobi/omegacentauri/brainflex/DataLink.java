@@ -25,6 +25,14 @@ public abstract class DataLink {
 		 }
 		 transmit(out);
 	 }
+	 
+	public boolean isRaw() {
+		return true;
+	}
+	
+	public String readLine() {
+		return null;
+	}
 
 	public abstract void clearBuffer();
 	

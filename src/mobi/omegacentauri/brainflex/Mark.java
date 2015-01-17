@@ -3,6 +3,7 @@ package mobi.omegacentauri.brainflex;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Scanner;
 
 public class Mark implements Comparable {
 	int t;
@@ -29,6 +30,20 @@ public class Mark implements Comparable {
 		t = dataIn.readInt();
 		rawCount = dataIn.readInt();
 		descriptor = dataIn.readUTF();
+		System.out.println("Mark read "+t+" "+rawCount+" "+descriptor);
+	}
+	
+	@Override
+	public String toString() {
+		return ""+t+" "+rawCount+" "+descriptor;
+	}
+
+	public Mark(String s) {
+		Scanner scan = new Scanner(s);
+		t = scan.nextInt();
+		rawCount = scan.nextInt();
+		descriptor = scan.next();
+		scan.close();
 	}
 
 	@Override

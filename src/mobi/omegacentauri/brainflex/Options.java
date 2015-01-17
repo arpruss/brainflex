@@ -38,7 +38,7 @@ public class Options extends JFrame {
 		SerialLink57600.class, 
 		BrainLinkSerialLinkLL.class, 
 		BrainLinkBridgeSerialLink.class, 
-		FileDataLink.class
+		NonrawDataLink.class
 	};
 	
 	public Options() {
@@ -171,7 +171,7 @@ public class Options extends JFrame {
 			}
 		});
 
-		final Checkbox saveBinaryCheck = new Checkbox("Save binary data", prefs.getBoolean(BrainFlex.PREF_SAVE_BINARY, false));
+		final Checkbox saveBinaryCheck = new Checkbox("Save data", prefs.getBoolean(BrainFlex.PREF_SAVE_BINARY, false));
 		
 		saveBinaryCheck.setState(prefs.getBoolean(BrainFlex.PREF_SAVE_BINARY, false));
 		
@@ -194,7 +194,7 @@ public class Options extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if ( powerCheck.getState() || rawCheck.getState()) {
-					if (LINKS[inMode.getSelectedIndex()] != FileDataLink.class) {
+					if (LINKS[inMode.getSelectedIndex()] != NonrawDataLink.class) {
 						if (comPortField.getText() == null ||
 								comPortField.getText().length() == 0)
 							return;
@@ -300,7 +300,7 @@ public class Options extends JFrame {
 		
 		int curInMode = prefs.getInt(BrainFlex.PREF_IN_MODE, 0);
 		inMode.setSelectedIndex(curInMode);
-		if (LINKS[curInMode] == FileDataLink.class) {
+		if (LINKS[curInMode] == NonrawDataLink.class) {
 			comPortLabel.setEnabled(false);
 			comPortField.setEnabled(false);
 			saveBinaryCheck.setEnabled(false);
@@ -316,7 +316,7 @@ public class Options extends JFrame {
 			public void actionPerformed(ActionEvent arg0) {
 				prefs.putInt(BrainFlex.PREF_IN_MODE, inMode.getSelectedIndex());
 				flushPrefs();
-				if (LINKS[inMode.getSelectedIndex()] == FileDataLink.class) {
+				if (LINKS[inMode.getSelectedIndex()] == NonrawDataLink.class) {
 					comPortLabel.setEnabled(false);
 					comPortField.setEnabled(false);
 					saveBinaryCheck.setEnabled(false);

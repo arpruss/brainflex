@@ -20,18 +20,19 @@ public class PowerGraphPanel extends GraphPanel {
 	public PowerGraphPanel(BrainFlexGUI gui, ViewerWindow w, List<?> data) {
 		super(gui, w, data, 0.15);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	protected
 	void draw(Graphics2D g2, Dimension s, List<Mark> marks) {
 		List<MindFlexReader.PowerData> data = new ArrayList<MindFlexReader.PowerData>((List<MindFlexReader.PowerData>)origData);
-		
+
 		int n = w.pause.point < 0 ? data.size() : w.pause.point;
 		if (n<1)
 			return;
 
 		calculateTSize(s, (double)data.get(n-1).t, w.scale * VISIBLE, 1000., 1.);
+		System.out.println("Drawing "+data.get(n-1).t+" "+endT);
 		marks.add(new Mark(0, -1, "start"));
 		Collections.sort(marks);
 
@@ -41,7 +42,7 @@ public class PowerGraphPanel extends GraphPanel {
 			for (double y: data.get(i).power)
 				if (y > ySize)
 					ySize = y;
-		
+
 		double effectiveHeight = s.getHeight() - 16;
 
 		double subgraphContentHeight = (effectiveHeight - SPACING * (1+MindFlexReader.POWER_NAMES.length) ) / (2+MindFlexReader.POWER_NAMES.length);
@@ -52,10 +53,11 @@ public class PowerGraphPanel extends GraphPanel {
 		g2.setFont(new Font("default", Font.BOLD, 12));
 
 		DecimalFormat df0 = new DecimalFormat("0.000");
-		DecimalFormat df1 = new DecimalFormat("0.0");
+		//DecimalFormat df1 = new DecimalFormat("0.0");
 
 		for (int i = 0 ; i < marks.size() ; i++) {
 			Mark m = marks.get(i);
+//			System.out.println("Mark at "+m.t+" window "+startT+" "+endT);
 			if (startT <= m.t && m.t < endT) {
 				double x = scaleT(m.t);
 				if (m.rawCount >= 0) {
@@ -66,66 +68,66 @@ public class PowerGraphPanel extends GraphPanel {
 						g2.drawChars(m.descriptor.toCharArray(), 0, m.descriptor.length(), (int)x, (int)s.getHeight()-14);
 					}
 				}
-					
-					int toTime;
-					if (i + 1 < marks.size()) 
-						toTime = marks.get(i+1).t;
-					else
-						toTime = (int) (endT+2);
-					int j;
-					
-					String avg;
-					
-					x += 2;
-					
-					for (j = 0 ; j < MindFlexReader.POWER_NAMES.length ; j++) {
-						avg = df0.format(getAveragePower(data, n, m.t, toTime, j));
-						g2.drawChars(avg.toCharArray(), 0, avg.length(), 
-								(int)x, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
-					}
-					
-					avg = df0.format(getAverageAttention(data, n, m.t, toTime));
-					g2.drawChars(avg.toCharArray(), 0, avg.length(), 
-							(int)x, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
 
-					j++;
-					
-					avg = df0.format(getAverageMeditation(data, n, m.t, toTime));
+				int toTime;
+				if (i + 1 < marks.size()) 
+					toTime = marks.get(i+1).t;
+				else
+					toTime = (int) (endT+2);
+				int j;
+
+				String avg;
+
+				x += 2;
+
+				for (j = 0 ; j < MindFlexReader.POWER_NAMES.length ; j++) {
+					avg = df0.format(getAveragePower(data, n, m.t, toTime, j));
 					g2.drawChars(avg.toCharArray(), 0, avg.length(), 
 							(int)x, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
-				
+				}
+
+				avg = df0.format(getAverageAttention(data, n, m.t, toTime));
+				g2.drawChars(avg.toCharArray(), 0, avg.length(), 
+						(int)x, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
+
+				j++;
+
+				avg = df0.format(getAverageMeditation(data, n, m.t, toTime));
+				g2.drawChars(avg.toCharArray(), 0, avg.length(), 
+						(int)x, (int)(j * subgraphHeight + ySize * .5 * yScale + 6));
+
 			}
 		}
-		
-//		int fromTime;
-//		String avgDesc;
-//		if (lastM == null) {
-//			fromTime = 0;
-//			avgDesc = "start";
-//		}
-//		else {
-//			fromTime = lastM.t;
-//			if (lastM.descriptor.length() == 0) 
-//				avgDesc = "unnamed";
-//			else
-//				avgDesc = lastM.descriptor;
-//		}
-//		
-//		avgDesc += "-";
-//
-//		int toTime;
-//		if (nextM == null) {
-//			toTime = data.get(n-1).t;
-//			avgDesc += "end";
-//		}
-//		else {
-//			toTime = nextM.t;
-//			if (nextM.descriptor.length() == 0) 
-//				avgDesc += "unnamed";
-//			else
-//				avgDesc += nextM.descriptor;
-//		}
-//		avgDesc += ": ";
+
+		//		int fromTime;
+		//		String avgDesc;
+		//		if (lastM == null) {
+		//			fromTime = 0;
+		//			avgDesc = "start";
+		//		}
+		//		else {
+		//			fromTime = lastM.t;
+		//			if (lastM.descriptor.length() == 0) 
+		//				avgDesc = "unnamed";
+		//			else
+		//				avgDesc = lastM.descriptor;
+		//		}
+		//		
+		//		avgDesc += "-";
+		//
+		//		int toTime;
+		//		if (nextM == null) {
+		//			toTime = data.get(n-1).t;
+		//			avgDesc += "end";
+		//		}
+		//		else {
+		//			toTime = nextM.t;
+		//			if (nextM.descriptor.length() == 0) 
+		//				avgDesc += "unnamed";
+		//			else
+		//				avgDesc += nextM.descriptor;
+		//		}
+		//		avgDesc += ": ";
 
 		g2.setColor(Color.GREEN);
 		for (int j = 0 ; j < MindFlexReader.POWER_NAMES.length + 1 ; j++) {
@@ -133,7 +135,7 @@ public class PowerGraphPanel extends GraphPanel {
 					s.getWidth(), subgraphHeight * ( j + 1 ) + SPACING / 2);
 			g2.draw(lin);
 		}
-		
+
 		g2.setColor(new Color(0f,0.5f,0f));
 		g2.setFont(new Font("default", Font.BOLD, 12));
 		for (int j = 0 ; j < MindFlexReader.POWER_NAMES.length ; j++) {
@@ -150,7 +152,7 @@ public class PowerGraphPanel extends GraphPanel {
 
 		int first = -1;
 		int last = -1;
-		
+
 		for (int i=0; i<n; i++) {
 			MindFlexReader.PowerData d1 = data.get(i);
 			if (first < 0 && startT <= d1.t)
@@ -169,7 +171,7 @@ public class PowerGraphPanel extends GraphPanel {
 				}
 				if (d0.haveAttention && d1.haveAttention) {
 					scaledLine(g2, d0.t, (1 - d0.attention)*ySize, d1.t, (1-d1.attention)*ySize, 
-								MindFlexReader.POWER_NAMES.length);
+							MindFlexReader.POWER_NAMES.length);
 				}
 				if (d0.haveMeditation && d1.haveMeditation) {
 					scaledLine(g2, d0.t, (1 - d0.meditation)*ySize, d1.t, (1-d1.meditation)*ySize, 
@@ -178,7 +180,7 @@ public class PowerGraphPanel extends GraphPanel {
 			}
 			d0 = d1;
 		}
-		
+
 		w.setTimeRange(first, last);
 	}
 
@@ -195,7 +197,7 @@ public class PowerGraphPanel extends GraphPanel {
 		}
 		return sum/count;
 	}
-	
+
 	private double getAverageAttention(List<PowerData> data, int n, int fromTime, int toTime) {
 		double sum = 0;
 		int count = 0;
@@ -208,7 +210,7 @@ public class PowerGraphPanel extends GraphPanel {
 		}
 		return sum/count;
 	}
-	
+
 	private double getAverageMeditation(List<PowerData> data, int n, int fromTime, int toTime) {
 		double sum = 0;
 		int count = 0;
@@ -221,5 +223,5 @@ public class PowerGraphPanel extends GraphPanel {
 		}
 		return sum/count;
 	}
-	
+
 }

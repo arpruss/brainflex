@@ -81,10 +81,8 @@ public class BrainFlex extends BrainFlexGUI {
 
 		try {
 			int inMode = pref.getInt(PREF_IN_MODE, 0);
-			if (Options.LINKS[inMode] == FileDataLink.class) {
-				DataInputStream in = new DataInputStream(new FileInputStream(new File(pref.get(PREF_FILE_NAME, null))));
-				readMarks(in);
-				dataLink = new FileDataLink(in);
+			if (Options.LINKS[inMode] == NonrawDataLink.class) {
+				dataLink = new NonrawDataLink(new File(pref.get(PREF_FILE_NAME, null)));
 			}
 			else if (Options.LINKS[inMode] == BrainLinkBridgeSerialLink.class){
 				dataLink = new BrainLinkBridgeSerialLink(pref.get(PREF_SERIAL_PORT, null));

@@ -1,5 +1,6 @@
 package mobi.omegacentauri.brainflex;
 
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
@@ -30,17 +31,12 @@ public abstract class BrainFlexGUI {
 			marks.add(mark);
 		}		
 	}
-	public void writeMarks(FileOutputStream out) throws IOException {
-		DataOutputStream dataOut = new DataOutputStream(out);
-		dataOut.writeInt(marks.size());
+	public void writeMarks(BufferedWriter out) throws IOException {
 		for (Mark m : marks)
-			m.write(dataOut);
-		dataOut.flush();
+			out.write(MindFlexReader.MARKER_MARK+m.toString()+"\n");
 	}
 	
-	public void readMarks(DataInputStream in) throws IOException {
-		int count = in.readInt();
-		for (int i = 0 ; i < count ; i++)
-			marks.add(new Mark(in));
+	public void addMark(String s) {
+		addMark(new Mark(s));
 	}
 }
